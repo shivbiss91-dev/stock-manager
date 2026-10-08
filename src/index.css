@@ -1,0 +1,150 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --bg-canvas: #F4F7FA;
+    --bg-panel: #FFFFFF;
+    --card-start: #FFFFFF;
+    --card-end: #F8FAFC;
+    --bg-input: #F1F5F9;
+    --text-primary: #0F172A;
+    --text-secondary: #475569;
+    --text-muted: #94A3B8;
+    --border-card: rgba(0, 0, 0, 0.08);
+    --border-input: rgba(0, 0, 0, 0.1);
+    --accent-blue: #3B5BFF;
+    --accent-orange: #FF6B35;
+  }
+
+  .dark {
+    --bg-canvas: #05060A;
+    --bg-panel: #0B0D14;
+    --card-start: #12151D;
+    --card-end: #181B25;
+    --bg-input: #1A1D26;
+    --text-primary: #F2F4F8;
+    --text-secondary: #9AA0AE;
+    --text-muted: #6B7280;
+    --border-card: rgba(255, 255, 255, 0.06);
+    --border-input: rgba(255, 255, 255, 0.08);
+    --accent-blue: #3B5BFF;
+    --accent-orange: #FF6B35;
+  }
+
+  body {
+    background-color: var(--bg-canvas);
+    color: var(--text-primary);
+    font-family: 'Mulish', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    overflow-x: hidden;
+    min-height: 100vh;
+  }
+}
+
+/* Ambient Canvas Radial Glows for Template (Dark Mode) */
+.dark body {
+  background-color: #05060A;
+  background-image: 
+    radial-gradient(circle at 10% 10%, rgba(138, 58, 26, 0.22) 0%, transparent 45%),
+    radial-gradient(circle at 50% 95%, rgba(138, 58, 26, 0.18) 0%, transparent 40%);
+  background-attachment: fixed;
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.3);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.6);
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.22);
+}
+
+/* Main App Shell Panel: 24px radius, 1px border, soft shadow */
+.app-panel {
+  background-color: var(--bg-panel);
+  border-radius: 24px;
+  border: 1px solid var(--border-card);
+  box-shadow: 0 20px 45px -15px rgba(0, 0, 0, 0.5);
+}
+
+/* Template Glass Cards */
+.template-card {
+  background: linear-gradient(180deg, var(--card-start) 0%, var(--card-end) 100%);
+  border: 1px solid var(--border-card);
+  box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.35), inset 0 1px 0 0 rgba(255, 255, 255, 0.08);
+  border-radius: 18px;
+}
+
+/* Interactive Pill & Input */
+.template-input {
+  background-color: var(--bg-input);
+  border: 1px solid var(--border-input);
+  border-radius: 12px;
+  color: var(--text-primary);
+}
+
+.template-input:focus {
+  outline: none;
+  border-color: #FF6B35;
+  box-shadow: 0 0 0 2px rgba(255, 107, 53, 0.2);
+}
+
+/* Solid Accent Cards */
+.card-solid-blue {
+  background: #3B5BFF;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 12px 30px -6px rgba(59, 91, 255, 0.4), inset 0 1px 0 0 rgba(255, 255, 255, 0.25);
+  border-radius: 20px;
+  color: #FFFFFF;
+}
+
+.card-solid-orange {
+  background: #FF6B35;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 0 12px 30px -6px rgba(255, 107, 53, 0.4), inset 0 1px 0 0 rgba(255, 255, 255, 0.25);
+  border-radius: 20px;
+  color: #FFFFFF;
+}
+
+/* Backward compatibility glass helpers */
+.glass-card {
+  background: linear-gradient(180deg, var(--card-start) 0%, var(--card-end) 100%);
+  border: 1px solid var(--border-card);
+  border-radius: 16px;
+}
+
+.glass-dropdown {
+  background: #181B25;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  box-shadow: 0 15px 35px -5px rgba(0, 0, 0, 0.65);
+}
+
+/* Transitions */
+* {
+  transition-duration: 150ms;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+button, a, input, select {
+  transition-property: color, background-color, border-color, box-shadow, opacity, transform;
+}
