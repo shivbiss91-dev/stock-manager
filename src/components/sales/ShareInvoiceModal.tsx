@@ -21,7 +21,7 @@ export const ShareInvoiceModal: React.FC<ShareInvoiceModalProps> = ({
 
   if (!isOpen) return null;
 
-  const invoiceUrl = `${window.location.origin}/sales/invoices/${invoice.id}`;
+  const invoiceUrl = `${window.location.origin}${window.location.pathname}#/sales/invoices/${invoice.id}`;
   const messageText = `Dear ${invoice.customerName},\n\nPlease find your GST Tax Invoice *${invoice.invoiceNumber}* for *${formatINR(invoice.grandTotal)}* from StockVista Wholesale.\nDue Date: ${formatDate(invoice.dueDate)}.\n\nView and download invoice here: ${invoiceUrl}\n\nThank you for your business!`;
 
   const handleCopy = () => {

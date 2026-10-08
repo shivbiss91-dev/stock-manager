@@ -5,9 +5,10 @@ import { ComputedInventoryItem } from '../../types/inventory';
 import { ItemCard } from '../../components/materials/ItemCard';
 import { EmptyState } from '../../components/common/EmptyState';
 import { Heart, ArrowLeft } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 export const FavouritesPage: React.FC = () => {
+  const navigate = useNavigate();
   const { favourites } = useUIStore();
   const [favouriteItems, setFavouriteItems] = useState<ComputedInventoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -69,7 +70,7 @@ export const FavouritesPage: React.FC = () => {
           description="Click the heart icon on any product in the catalog or warehouse tables to add it to your quick-access favorites list."
           icon={<Heart className="w-8 h-8 text-rose-500" />}
           actionText="Browse Wood & Materials"
-          onAction={() => (window.location.href = '/materials/wood')}
+          onAction={() => navigate('/materials/wood')}
         />
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
