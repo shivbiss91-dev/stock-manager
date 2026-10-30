@@ -7,11 +7,17 @@
     <title>StockVista — Smart Inventory. Strong Business.</title>
     <script>
       // When served directly on GitHub Pages root (main branch), route to pre-compiled bundle in /docs/
-      if (window.location.hostname.endsWith('github.io') && !window.location.pathname.includes('/docs')) {
-        var base = window.location.pathname.replace(/\/+$/, '');
-        window.location.replace(base + '/docs/' + window.location.hash);
+      if (window.location.hostname.endsWith('github.io')) {
+        var p = window.location.pathname;
+        if (!p.endsWith('/docs') && !p.endsWith('/docs/')) {
+          var base = p.replace(/\/+$/, '');
+          window.location.replace(base + '/docs/' + window.location.hash);
+        }
       }
     </script>
+    <noscript>
+      <meta http-equiv="refresh" content="0; url=./docs/">
+    </noscript>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Mulish:ital,wght@0,300..900;1,300..900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">

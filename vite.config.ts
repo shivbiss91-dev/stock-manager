@@ -5,7 +5,20 @@ import path from 'path'
 // https://vite.dev/config/
 export default defineConfig({
   base: './',
-  plugins: [react()],
+  plugins: [
+    react(),
+    {
+      name: 'strip-gh-redirect',
+      transformIndexHtml(html, ctx) {
+        if (ctx.bundle) {
+          return html
+            .replace(/<script>\s*\/\/ When served directly on GitHub Pages[\s\S]*?<\/script>\s*/, '')
+            .replace(/<noscript>\s*<meta http-equiv="refresh" content="0; url=\.\/docs\/">\s*<\/noscript>\s*/, '');
+        }
+        return html;
+      },
+    },
+  ],
   optimizeDeps: {
     entries: ['index.html'],
   },
