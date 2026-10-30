@@ -4,20 +4,12 @@ import {
   LayoutDashboard,
   Layers,
   Package,
-  TrendingUp,
-  ShoppingCart,
-  Truck,
-  Users,
-  Repeat,
-  BarChart3,
-  CheckSquare,
   ShieldAlert,
   UserCog,
   Settings,
   ChevronLeft,
   ChevronRight,
   ChevronDown,
-  Warehouse as WarehouseIcon,
   X,
 } from 'lucide-react';
 import { Logo } from '../common/Logo';
@@ -43,10 +35,7 @@ export const Sidebar: React.FC = () => {
   const location = useLocation();
   const { sidebarCollapsed, toggleSidebar, mobileSidebarOpen, setMobileSidebarOpen } = useUIStore();
   const { user } = useAuthStore();
-  const [openSubmenus, setOpenSubmenus] = useState<Record<string, boolean>>({
-    sales: true,
-    purchases: false,
-  });
+  const [openSubmenus, setOpenSubmenus] = useState<Record<string, boolean>>({});
 
   const toggleSubmenu = (key: string) => {
     setOpenSubmenus((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -71,64 +60,6 @@ export const Sidebar: React.FC = () => {
       path: '/items',
       icon: <Package className="w-5 h-5" strokeWidth={1.5} />,
       badge: '3.4k',
-    },
-    {
-      id: 'sales',
-      label: t('nav.sales', 'Sales'),
-      path: '/sales/invoices',
-      icon: <TrendingUp className="w-5 h-5" strokeWidth={1.5} />,
-      allowedRoles: ['admin', 'manager', 'staff'],
-      subItems: [
-        { label: t('nav.quotations', 'Quotations'), path: '/sales/quotations' },
-        { label: t('nav.sales_orders', 'Sales Orders'), path: '/sales/orders' },
-        { label: t('nav.invoices', 'GST Invoices'), path: '/sales/invoices' },
-        { label: t('nav.returns', 'Returns / Credit'), path: '/sales/returns' },
-      ],
-    },
-    {
-      id: 'purchases',
-      label: t('nav.purchases', 'Purchases'),
-      path: '/purchases/orders',
-      icon: <ShoppingCart className="w-5 h-5" strokeWidth={1.5} />,
-      allowedRoles: ['admin', 'manager', 'staff'],
-      subItems: [
-        { label: t('nav.purchase_orders', 'Purchase Orders'), path: '/purchases/orders' },
-        { label: t('nav.grn', 'Goods Received (GRN)'), path: '/purchases/grn' },
-        { label: t('nav.supplier_bills', 'Supplier Bills'), path: '/purchases/bills' },
-      ],
-    },
-    {
-      id: 'orders-dispatch',
-      label: t('nav.orders', 'Orders & Dispatch'),
-      path: '/sales/orders',
-      icon: <Truck className="w-5 h-5" strokeWidth={1.5} />,
-      allowedRoles: ['admin', 'manager', 'staff'],
-    },
-    {
-      id: 'parties',
-      label: t('nav.parties', 'Customers & Suppliers'),
-      path: '/customers',
-      icon: <Users className="w-5 h-5" strokeWidth={1.5} />,
-      subItems: [
-        { label: t('nav.customers', 'Wholesale Customers'), path: '/customers' },
-        { label: t('nav.suppliers', 'Vendors & Suppliers'), path: '/suppliers' },
-      ],
-    },
-    {
-      id: 'reports',
-      label: t('nav.reports', 'Reports'),
-      path: '/reports',
-      icon: <BarChart3 className="w-5 h-5" strokeWidth={1.5} />,
-      allowedRoles: ['admin', 'manager', 'viewer'],
-    },
-    {
-      id: 'approvals',
-      label: t('nav.approvals', 'Approvals'),
-      path: '/approvals',
-      icon: <CheckSquare className="w-5 h-5" strokeWidth={1.5} />,
-      allowedRoles: ['admin', 'manager'],
-      badge: '3',
-      badgeColor: 'bg-brand-orange text-white',
     },
     {
       id: 'audit-log',

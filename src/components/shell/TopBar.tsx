@@ -4,7 +4,6 @@ import {
   Bell,
   Sun,
   Moon,
-  Home,
   Calendar,
   Menu,
   ChevronDown,
@@ -18,8 +17,6 @@ import { useUIStore } from '../../store/uiStore';
 import { useThemeStore } from '../../store/themeStore';
 import { useNotificationStore } from '../../store/notificationStore';
 import { useAuthStore } from '../../store/authStore';
-import { warehouseService } from '../../services/warehouseService';
-import { Warehouse } from '../../types/warehouse';
 import { PeriodType } from '../../types/common';
 import { changeAppLanguage, SUPPORTED_LANGUAGES } from '../../i18n';
 import { useTranslation } from 'react-i18next';
@@ -27,8 +24,6 @@ import { useTranslation } from 'react-i18next';
 export const TopBar: React.FC = () => {
   const { t, i18n } = useTranslation();
   const {
-    selectedWarehouseId,
-    setSelectedWarehouseId,
     period,
     setPeriod,
     setGlobalSearchOpen,
@@ -43,11 +38,9 @@ export const TopBar: React.FC = () => {
   const { unreadCount, loadNotifications } = useNotificationStore();
   const { user } = useAuthStore();
 
-  const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
   const [langMenuOpen, setLangMenuOpen] = useState(false);
 
   useEffect(() => {
-    warehouseService.getWarehouses().then(setWarehouses);
     loadNotifications();
   }, [loadNotifications]);
 
@@ -58,8 +51,6 @@ export const TopBar: React.FC = () => {
     { id: 'year', label: 'FY 2026-27' },
     { id: 'custom', label: 'Custom' },
   ];
-
-  const selectedWarehouse = warehouses.find((w) => w.id === selectedWarehouseId) || warehouses[0];
 
   return (
     <header className="sticky top-0 z-30 h-16 sm:h-[70px] bg-white dark:bg-[#0B0D14] text-slate-800 dark:text-[#F2F4F8] border-b border-slate-200/80 dark:border-white/[0.06] transition-colors shadow-sm">
@@ -81,40 +72,6 @@ export const TopBar: React.FC = () => {
             <div className="hidden lg:block min-w-0">
               <Breadcrumbs />
             </div>
-          </div>
-        </div>
-
-        {/* Center: Warehouse Selector Pill */}
-        <div className="relative hidden md:flex items-center">
-          <div className="relative flex items-center gap-2.5 bg-slate-100 dark:bg-[#1A1D26] border border-slate-200 dark:border-white/[0.08] rounded-xl px-3.5 py-2 text-xs text-slate-700 dark:text-[#F2F4F8] shadow-sm hover:border-brand-orange/40 transition-colors">
-            <Home className="w-4 h-4 text-brand-orange flex-shrink-0" strokeWidth={1.5} />
-            <div className="flex flex-col text-left">
-              <span className="font-semibold truncate max-w-[170px]">
-                {selectedWarehouse ? `${selectedWarehouse.name}` : 'All Hubs'}
-              </span>
-              {selectedWarehouse?.city && (
-                <span className="text-[10px] text-slate-400 dark:text-[#9AA0AE] leading-tight">
-                  {selectedWarehouse.city}
-                </span>
-              )}
-            </div>
-            <select
-              value={selectedWarehouseId}
-              onChange={(e) => setSelectedWarehouseId(e.target.value)}
-              className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
-              title="Select Warehouse"
-            >
-              {warehouses.map((w) => (
-                <option
-                  key={w.id}
-                  value={w.id}
-                  className="bg-white dark:bg-[#12151D] text-slate-800 dark:text-white"
-                >
-                  {w.name} - {w.city}
-                </option>
-              ))}
-            </select>
-            <ChevronDown className="w-3.5 h-3.5 text-slate-400 ml-1 pointer-events-none" strokeWidth={1.5} />
           </div>
         </div>
 
