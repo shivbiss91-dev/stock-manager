@@ -29,7 +29,12 @@ import {
   Table as TableIcon,
   BarChart2,
   Lock,
+  Plus,
+  Minus,
+  Sliders,
 } from 'lucide-react';
+import { QuickStockAdjustmentModal } from '../../components/dashboard/QuickStockAdjustmentModal';
+import { formatPackagingBreakdown } from '../../utils/unitConversions';
 import {
   ResponsiveContainer,
   ComposedChart,
@@ -100,6 +105,16 @@ export const ItemDetailPage: React.FC = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
   const [isLabelModalOpen, setIsLabelModalOpen] = useState(false);
+  const [isAdjustmentModalOpen, setIsAdjustmentModalOpen] = useState(false);
+  const [adjustmentMode, setAdjustmentMode] = useState<'add' | 'deduct' | 'direct'>('add');
+
+  const handleAdjustmentSuccess = async () => {
+    if (!itemId) return;
+    const reloaded = await inventoryService.getItemById(itemId);
+    if (reloaded) setItem(reloaded);
+    const m = await stockMovementService.getMovements({ itemId });
+    setMovements(m);
+  };
 
   // Load item data
   useEffect(() => {
@@ -274,6 +289,19 @@ export const ItemDetailPage: React.FC = () => {
             )}
           </button>
 
+          {/* Quick Adjust Stock */}
+          <button
+            onClick={() => {
+              setAdjustmentMode('add');
+              setIsAdjustmentModalOpen(true);
+            }}
+            className="px-3.5 py-2 text-xs sm:text-sm font-medium rounded-xl border border-slate-200 dark:border-white/[0.08] template-input text-slate-700 dark:text-slate-200 hover:text-white transition flex items-center gap-1.5"
+            title="Perform manual stock adjustment (+ / -) or direct calibration"
+          >
+            <ArrowRightLeft className="w-4 h-4 text-emerald-500" />
+            <span>Adjust Stock</span>
+          </button>
+
           {/* Transfer Stock */}
           <button
             onClick={() => setIsTransferModalOpen(true)}
@@ -422,20 +450,60 @@ export const ItemDetailPage: React.FC = () => {
               <p className="text-[10px] text-slate-400">excl. {item.gstRate}% GST</p>
             </div>
 
-            {/* Current Stock */}
+            {/* Current Stock with manual controls & packaging conversion */}
             <div>
-              <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400">Available Stock</p>
-              <p
-                className={`text-base sm:text-lg font-bold mt-0.5 ${
+              <div className="flex items-center justify-between">
+                <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400">Available Stock</p>
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAdjustmentMode('deduct');
+                      setIsAdjustmentModalOpen(true);
+                    }}
+                    className="w-5 h-5 rounded flex items-center justify-center bg-rose-500/10 hover:bg-rose-500 text-rose-500 hover:text-white transition-colors border border-rose-500/20"
+                    title="Manual Deduct Stock (-)"
+                  >
+                    <Minus className="w-3 h-3" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAdjustmentMode('add');
+                      setIsAdjustmentModalOpen(true);
+                    }}
+                    className="w-5 h-5 rounded flex items-center justify-center bg-emerald-500/10 hover:bg-emerald-500 text-emerald-500 hover:text-white transition-colors border border-emerald-500/20"
+                    title="Manual Add Stock (+)"
+                  >
+                    <Plus className="w-3 h-3" />
+                  </button>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setAdjustmentMode('direct');
+                  setIsAdjustmentModalOpen(true);
+                }}
+                className={`text-base sm:text-lg font-bold mt-0.5 block text-left hover:text-accent-orange transition-colors ${
                   item.currentStock <= item.reorderLevel
                     ? 'text-amber-500'
                     : 'text-emerald-500'
                 }`}
+                title="Click to directly edit inventory count"
               >
                 {item.currentStock.toLocaleString('en-IN')}{' '}
                 <span className="text-xs font-normal text-slate-500">{item.unit}</span>
+              </button>
+
+              <p className="text-[10px] text-slate-400 font-mono mt-0.5" title="Packaging breakdown equivalent">
+                ≈ {formatPackagingBreakdown(item.currentStock, item.packagingConversions)}
               </p>
-              <p className="text-[10px] text-slate-400">Reorder at {item.reorderLevel} {item.unit}</p>
+              <p className="text-[10px] text-slate-400 mt-0.5">
+                Reorder: <strong>{item.reorderLevel} {item.unit}</strong> • PO Qty:{' '}
+                <strong>{item.reorderQuantity || item.reorderLevel * 2} {item.unit}</strong>
+              </p>
             </div>
 
             {/* Admin Only: Cost Price */}
@@ -1018,10 +1086,11 @@ export const ItemDetailPage: React.FC = () => {
                   <tr>
                     <th className="py-2.5 px-3 font-semibold">Date & Time</th>
                     <th className="py-2.5 px-3 font-semibold">Type</th>
-                    <th className="py-2.5 px-3 font-semibold text-right">Quantity Delta</th>
-                    <th className="py-2.5 px-3 font-semibold text-right">Stock After</th>
-                    <th className="py-2.5 px-3 font-semibold">Reference Document</th>
-                    <th className="py-2.5 px-3 font-semibold">Logged By</th>
+                    <th className="py-2.5 px-3 font-semibold text-right">Prev Balance</th>
+                    <th className="py-2.5 px-3 font-semibold text-right">Adjustment Delta</th>
+                    <th className="py-2.5 px-3 font-semibold text-right">New Balance</th>
+                    <th className="py-2.5 px-3 font-semibold">Reference & Reason</th>
+                    <th className="py-2.5 px-3 font-semibold">Authorized By</th>
                     <th className="py-2.5 px-3 font-semibold">Notes</th>
                   </tr>
                 </thead>
@@ -1051,6 +1120,9 @@ export const ItemDetailPage: React.FC = () => {
                             {m.type}
                           </span>
                         </td>
+                        <td className="py-2.5 px-3 text-right font-mono font-medium text-slate-500 whitespace-nowrap">
+                          {m.stockBefore ?? (m.stockAfter - m.quantityDelta)} {m.unit}
+                        </td>
                         <td
                           className={`py-2.5 px-3 text-right font-bold whitespace-nowrap ${
                             m.quantityDelta > 0
@@ -1060,11 +1132,12 @@ export const ItemDetailPage: React.FC = () => {
                         >
                           {m.quantityDelta > 0 ? `+${m.quantityDelta}` : m.quantityDelta} {m.unit}
                         </td>
-                        <td className="py-2.5 px-3 text-right font-mono font-medium whitespace-nowrap">
+                        <td className="py-2.5 px-3 text-right font-mono font-extrabold text-slate-800 dark:text-slate-100 whitespace-nowrap">
                           {m.stockAfter} {m.unit}
                         </td>
                         <td className="py-2.5 px-3 font-mono font-semibold text-accent-blue whitespace-nowrap">
-                          {m.referenceNumber}
+                          <div>{m.referenceNumber}</div>
+                          {m.reason && <div className="text-[10px] text-slate-400 font-sans font-normal">{m.reason}</div>}
                         </td>
                         <td className="py-2.5 px-3 whitespace-nowrap">
                           <span className="font-medium text-slate-800 dark:text-slate-200">{m.userName}</span>
@@ -1222,6 +1295,16 @@ export const ItemDetailPage: React.FC = () => {
           item={item}
           isOpen={isLabelModalOpen}
           onClose={() => setIsLabelModalOpen(false)}
+        />
+      )}
+
+      {isAdjustmentModalOpen && (
+        <QuickStockAdjustmentModal
+          item={item}
+          isOpen={isAdjustmentModalOpen}
+          initialMode={adjustmentMode}
+          onClose={() => setIsAdjustmentModalOpen(false)}
+          onSuccess={handleAdjustmentSuccess}
         />
       )}
     </div>

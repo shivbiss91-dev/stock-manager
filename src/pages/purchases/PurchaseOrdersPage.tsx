@@ -19,6 +19,7 @@ import { formatDate } from '../../utils/dateUtils';
 import { MOCK_SUPPLIERS } from '../../data/suppliers';
 import { useAuthStore } from '../../store/authStore';
 import { useNotificationStore } from '../../store/notificationStore';
+import { PREDEFINED_UNITS, PredefinedUnit } from '../../utils/unitConversions';
 
 export const PurchaseOrdersPage: React.FC = () => {
   const { user } = useAuthStore();
@@ -32,6 +33,8 @@ export const PurchaseOrdersPage: React.FC = () => {
   // Modal
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [selectedSupplierId, setSelectedSupplierId] = useState(MOCK_SUPPLIERS[0]?.id || '');
+  const [poUnit, setPoUnit] = useState<PredefinedUnit>('PCS');
+  const [poQuantity, setPoQuantity] = useState<number>(150);
   const [expectedDate, setExpectedDate] = useState(() => {
     const d = new Date();
     d.setDate(d.getDate() + 7);
@@ -92,9 +95,9 @@ export const PurchaseOrdersPage: React.FC = () => {
           name: 'Gurjan BWP Marine Veneers & Laminates - 18mm (8x4 ft)',
           sku: 'WD-VEN-GUR-0001',
           hsnCode: '440711',
-          quantityOrdered: 150,
+          quantityOrdered: poQuantity,
           quantityReceived: 0,
-          unit: 'sheets',
+          unit: poUnit,
           rate: 2100,
           gstRate: 18,
           lineTaxable: 315000,
@@ -311,6 +314,39 @@ export const PurchaseOrdersPage: React.FC = () => {
                     </option>
                   ))}
                 </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    Procurement Quantity *
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={poQuantity}
+                    onChange={(e) => setPoQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+                    className="w-full px-3 py-2 text-xs sm:text-sm template-input border border-slate-200 dark:border-white/[0.08] rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-accent-orange/30"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    Unit of Measurement *
+                  </label>
+                  <select
+                    value={poUnit}
+                    onChange={(e) => setPoUnit(e.target.value as PredefinedUnit)}
+                    className="w-full px-3 py-2 text-xs sm:text-sm template-input border border-slate-200 dark:border-white/[0.08] rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-accent-orange/30"
+                  >
+                    {PREDEFINED_UNITS.map((u) => (
+                      <option key={u.code} value={u.code} className="dark:bg-dark-card">
+                        {u.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">

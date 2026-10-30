@@ -1,4 +1,7 @@
 import { StockStatus } from './common';
+import { PredefinedUnit, PackagingConversions } from '../utils/unitConversions';
+
+export type { PredefinedUnit, PackagingConversions };
 
 export type MaterialCategory =
   | 'wood'
@@ -11,13 +14,12 @@ export type MaterialCategory =
   | 'ceramic';
 
 export type UnitOfMeasurement =
+  | PredefinedUnit
   | 'pieces'
   | 'sheets'
   | 'boxes'
   | 'rolls'
   | 'bundles'
-  | 'kg'
-  | 'meters'
   | 'pairs';
 
 export type SalesVelocity = 'High' | 'Medium' | 'Low';
@@ -37,7 +39,12 @@ export interface InventoryItem {
   description: string;
   currentStock: number;
   unit: UnitOfMeasurement;
+  baseUnit?: 'PCS' | 'UNT';
+  packagingConversions?: PackagingConversions;
   reorderLevel: number;
+  reorderLevelUnit?: PredefinedUnit;
+  reorderQuantity?: number;
+  reorderQuantityUnit?: PredefinedUnit;
   costPrice: number;    // INR (Exclusive of GST)
   sellingPrice: number; // INR (Exclusive of GST)
   gstRate: number;      // e.g. 18 for 18%

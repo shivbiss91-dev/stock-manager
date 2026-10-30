@@ -8,12 +8,14 @@ import { inventoryService } from '../../services/inventoryService';
 import { ComputedInventoryItem, MaterialCategory } from '../../types/inventory';
 import { StockStatus } from '../../types/common';
 import { formatINR } from '../../utils/formatINR';
+import { formatPackagingBreakdown } from '../../utils/unitConversions';
 import { MATERIAL_CATEGORIES } from '../../data/materialCategories';
 import { MOCK_SUPPLIERS } from '../../data/suppliers';
 import { MOCK_WAREHOUSES } from '../../data/warehouses';
 import {
   Search,
   Plus,
+  Minus,
   Download,
   SlidersHorizontal,
   ChevronLeft,
@@ -61,6 +63,7 @@ export const ProductListTableCard: React.FC<ProductListTableCardProps> = ({
   // Modals & Popovers
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [adjustmentItem, setAdjustmentItem] = useState<ComputedInventoryItem | null>(null);
+  const [adjustmentMode, setAdjustmentMode] = useState<'add' | 'deduct' | 'direct'>('add');
   const [columnSettingsOpen, setColumnSettingsOpen] = useState(false);
   const [exportMenuOpen, setExportMenuOpen] = useState(false);
 
@@ -145,6 +148,7 @@ export const ProductListTableCard: React.FC<ProductListTableCardProps> = ({
       'Cost (INR)',
       'On Hand',
       'Unit',
+      'Packaging Breakdown',
       'On-Hand Value (INR)',
       'Demand Velocity',
       'Status',
@@ -158,6 +162,7 @@ export const ProductListTableCard: React.FC<ProductListTableCardProps> = ({
       i.costPrice,
       i.currentStock,
       i.unit,
+      `"${formatPackagingBreakdown(i.currentStock, i.packagingConversions)}"`,
       i.costPrice * i.currentStock,
       i.salesVelocity,
       i.stockStatus,
@@ -546,13 +551,52 @@ export const ProductListTableCard: React.FC<ProductListTableCardProps> = ({
                       </td>
                     )}
 
-                    {/* On Hand */}
+                    {/* On Hand with Manual +/- Controls and Direct Edit */}
                     {visibleColumns.onHand && (
-                      <td className="px-4 py-3 text-right font-extrabold text-slate-900 dark:text-white whitespace-nowrap">
-                        {item.currentStock.toLocaleString('en-IN')}{' '}
-                        <span className="text-[10px] font-normal text-slate-400">
-                          {item.unit}
-                        </span>
+                      <td className="px-4 py-3 text-right whitespace-nowrap">
+                        <div className="flex items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
+                          {/* Manual Minus (-) Button */}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setAdjustmentItem(item);
+                              setAdjustmentMode('deduct');
+                            }}
+                            className="w-5 h-5 rounded flex items-center justify-center bg-rose-500/10 hover:bg-rose-500 text-rose-500 hover:text-white transition-colors border border-rose-500/20"
+                            title="Deduct Stock (-)"
+                          >
+                            <Minus className="w-3 h-3" />
+                          </button>
+
+                          {/* Stock Number (Clickable for Direct Edit) */}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setAdjustmentItem(item);
+                              setAdjustmentMode('direct');
+                            }}
+                            className="text-right font-extrabold text-slate-900 dark:text-white hover:text-accent-orange transition-colors px-1"
+                            title="Click to directly calibrate stock count"
+                          >
+                            {item.currentStock.toLocaleString('en-IN')}{' '}
+                            <span className="text-[10px] font-normal text-slate-400">
+                              {item.unit}
+                            </span>
+                          </button>
+
+                          {/* Manual Plus (+) Button */}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setAdjustmentItem(item);
+                              setAdjustmentMode('add');
+                            }}
+                            className="w-5 h-5 rounded flex items-center justify-center bg-emerald-500/10 hover:bg-emerald-500 text-emerald-500 hover:text-white transition-colors border border-emerald-500/20"
+                            title="Add Stock (+)"
+                          >
+                            <Plus className="w-3 h-3" />
+                          </button>
+                        </div>
                       </td>
                     )}
 
@@ -592,9 +636,12 @@ export const ProductListTableCard: React.FC<ProductListTableCardProps> = ({
 
                           {/* Edit / Quick Adjust */}
                           <button
-                            onClick={() => setAdjustmentItem(item)}
+                            onClick={() => {
+                              setAdjustmentItem(item);
+                              setAdjustmentMode('direct');
+                            }}
                             className="p-1.5 rounded-lg text-slate-500 hover:text-brand-orange hover:bg-white/10 transition-colors"
-                            title="Quick Stock Adjustment"
+                            title="Quick Stock Adjustment & Calibration"
                           >
                             <Edit className="w-4 h-4" strokeWidth={1.5} />
                           </button>
@@ -672,6 +719,7 @@ export const ProductListTableCard: React.FC<ProductListTableCardProps> = ({
       <QuickStockAdjustmentModal
         item={adjustmentItem}
         isOpen={!!adjustmentItem}
+        initialMode={adjustmentMode}
         onClose={() => setAdjustmentItem(null)}
         onSuccess={loadData}
       />

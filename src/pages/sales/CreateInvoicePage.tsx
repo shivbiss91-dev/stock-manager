@@ -304,7 +304,7 @@ export const CreateInvoicePage: React.FC = () => {
         hsnCode: '996511',
         quantity: 1,
         availableStock: 9999,
-        unit: 'service',
+        unit: 'UNT',
         rate: 3500,
         discountPercent: 0,
         gstRate: 18,

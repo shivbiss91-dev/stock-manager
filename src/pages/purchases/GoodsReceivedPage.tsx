@@ -17,6 +17,7 @@ import { formatDate } from '../../utils/dateUtils';
 import { MOCK_SUPPLIERS } from '../../data/suppliers';
 import { useAuthStore } from '../../store/authStore';
 import { useNotificationStore } from '../../store/notificationStore';
+import { PREDEFINED_UNITS, PredefinedUnit } from '../../utils/unitConversions';
 
 export const GoodsReceivedPage: React.FC = () => {
   const { user } = useAuthStore();
@@ -32,6 +33,7 @@ export const GoodsReceivedPage: React.FC = () => {
   const [vehicleNo, setVehicleNo] = useState('MH-04-AB-1928');
   const [transporter, setTransporter] = useState('V-Trans Express');
   const [receivedQty, setReceivedQty] = useState('100');
+  const [grnUnit, setGrnUnit] = useState<PredefinedUnit>('PCS');
   const [inspectionNotes, setInspectionNotes] = useState('Inspected against IS 710 specification; zero delamination');
 
   useEffect(() => {
@@ -76,7 +78,7 @@ export const GoodsReceivedPage: React.FC = () => {
           quantityReceived: qty,
           acceptedQty: qty,
           rejectedQty: 0,
-          unit: 'sheets',
+          unit: grnUnit,
           inspectionNotes: inspectionNotes.trim(),
         },
       ],
@@ -302,7 +304,7 @@ export const GoodsReceivedPage: React.FC = () => {
 
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                    Accepted Quantity (Sheets) *
+                    Accepted Quantity *
                   </label>
                   <input
                     type="number"
@@ -313,6 +315,23 @@ export const GoodsReceivedPage: React.FC = () => {
                     className="w-full px-3 py-2 text-xs sm:text-sm template-input border border-slate-200 dark:border-white/[0.08] rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-accent-orange/30"
                   />
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  Unit of Measurement *
+                </label>
+                <select
+                  value={grnUnit}
+                  onChange={(e) => setGrnUnit(e.target.value as PredefinedUnit)}
+                  className="w-full px-3 py-2 text-xs sm:text-sm template-input border border-slate-200 dark:border-white/[0.08] rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-accent-orange/30"
+                >
+                  {PREDEFINED_UNITS.map((u) => (
+                    <option key={u.code} value={u.code} className="dark:bg-dark-card">
+                      {u.label}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div>

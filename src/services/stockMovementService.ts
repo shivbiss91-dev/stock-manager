@@ -146,6 +146,7 @@ function generateSampleMovements(itemId: string): StockMovementRecord[] {
       itemId,
       date: '2026-10-08T10:00:00Z',
       type: 'out',
+      stockBefore: 100,
       quantityDelta: -20,
       stockAfter: 80,
       unit: 'pieces',
@@ -153,6 +154,7 @@ function generateSampleMovements(itemId: string): StockMovementRecord[] {
       userRole: 'Billing Staff',
       referenceNumber: 'SO-2026-4412',
       referenceType: 'SO',
+      reason: 'Wholesale Order Dispatch',
       notes: 'Wholesale client order dispatch',
     },
     {
@@ -160,6 +162,7 @@ function generateSampleMovements(itemId: string): StockMovementRecord[] {
       itemId,
       date: '2026-10-04T14:30:00Z',
       type: 'in',
+      stockBefore: 50,
       quantityDelta: 50,
       stockAfter: 100,
       unit: 'pieces',
@@ -167,6 +170,7 @@ function generateSampleMovements(itemId: string): StockMovementRecord[] {
       userRole: 'Warehouse Master',
       referenceNumber: 'GRN-2026-0092',
       referenceType: 'PO',
+      reason: 'Direct Mill Receipt',
       notes: 'Direct mill shipment receipt',
     },
     {
@@ -174,6 +178,7 @@ function generateSampleMovements(itemId: string): StockMovementRecord[] {
       itemId,
       date: '2026-09-28T16:00:00Z',
       type: 'transfer',
+      stockBefore: 60,
       quantityDelta: -10,
       stockAfter: 50,
       unit: 'pieces',
@@ -181,6 +186,7 @@ function generateSampleMovements(itemId: string): StockMovementRecord[] {
       userRole: 'Manager',
       referenceNumber: 'TR-2026-035',
       referenceType: 'Transfer',
+      reason: 'Inter-hub Relocation',
       notes: 'Transferred to Peenya Hub (KA)',
     },
   ];

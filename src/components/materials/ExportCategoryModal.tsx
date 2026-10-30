@@ -3,6 +3,7 @@ import { Modal } from '../common/Modal';
 import { Button } from '../common/Button';
 import { ComputedInventoryItem } from '../../types/inventory';
 import { formatINR } from '../../utils/formatINR';
+import { formatPackagingBreakdown } from '../../utils/unitConversions';
 import { FileSpreadsheet, FileText, Download, CheckCircle2 } from 'lucide-react';
 
 interface ExportCategoryModalProps {
@@ -34,6 +35,7 @@ export const ExportCategoryModal: React.FC<ExportCategoryModalProps> = ({
           'Sub-Type',
           'Current Stock',
           'Unit',
+          'Packaging Breakdown',
           'Reorder Level',
           'Cost Price (INR)',
           'Selling Price (INR)',
@@ -51,6 +53,7 @@ export const ExportCategoryModal: React.FC<ExportCategoryModalProps> = ({
           `"${i.materialSubtype}"`,
           i.currentStock,
           i.unit,
+          `"${formatPackagingBreakdown(i.currentStock, i.packagingConversions)}"`,
           i.reorderLevel,
           i.costPrice,
           i.sellingPrice,

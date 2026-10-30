@@ -44,13 +44,15 @@ export interface StockMovementRecord {
   itemId: string;
   date: string; // ISO
   type: MovementType;
+  stockBefore?: number;
   quantityDelta: number; // positive or negative
   stockAfter: number;
   unit: string;
   userName: string;
   userRole: string;
   referenceNumber: string; // e.g. "GRN-2026-0089", "SO-2026-4401", "TR-2026-012"
-  referenceType: 'PO' | 'SO' | 'Transfer' | 'Audit' | 'Return';
+  referenceType: 'PO' | 'SO' | 'Transfer' | 'Audit' | 'Return' | 'Adjustment';
+  reason?: string;
   notes: string;
 }
 

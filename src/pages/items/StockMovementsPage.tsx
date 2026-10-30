@@ -82,9 +82,11 @@ export const StockMovementsPage: React.FC = () => {
       'Date',
       'Movement Type',
       'Item ID',
-      'Quantity Delta',
+      'Previous Stock',
+      'Adjustment Delta',
       'Stock After',
       'Unit',
+      'Reason',
       'Reference No',
       'User Name',
       'User Role',
@@ -94,9 +96,11 @@ export const StockMovementsPage: React.FC = () => {
       `"${m.date}"`,
       `"${m.type}"`,
       `"${m.itemId}"`,
+      m.stockBefore ?? (m.stockAfter - m.quantityDelta),
       m.quantityDelta,
       m.stockAfter,
       `"${m.unit}"`,
+      `"${(m.reason || '').replace(/"/g, '""')}"`,
       `"${m.referenceNumber}"`,
       `"${m.userName}"`,
       `"${m.userRole}"`,
@@ -215,9 +219,10 @@ export const StockMovementsPage: React.FC = () => {
                 <th className="py-3 px-4 font-semibold">Timestamp</th>
                 <th className="py-3 px-3 font-semibold">Classification</th>
                 <th className="py-3 px-3 font-semibold">Item / SKU</th>
-                <th className="py-3 px-3 font-semibold text-right">Quantity Delta</th>
-                <th className="py-3 px-3 font-semibold text-right">Stock Balance</th>
-                <th className="py-3 px-3 font-semibold">Ref Number</th>
+                <th className="py-3 px-3 font-semibold text-right">Previous Balance</th>
+                <th className="py-3 px-3 font-semibold text-right">Adjustment Delta</th>
+                <th className="py-3 px-3 font-semibold text-right">New Balance</th>
+                <th className="py-3 px-3 font-semibold">Ref & Reason</th>
                 <th className="py-3 px-3 font-semibold">Authorized By</th>
                 <th className="py-3 px-4 font-semibold">Description / Notes</th>
               </tr>
@@ -226,7 +231,7 @@ export const StockMovementsPage: React.FC = () => {
               {isLoading ? (
                 Array.from({ length: 6 }).map((_, i) => (
                   <tr key={i} className="animate-pulse">
-                    <td colSpan={8} className="py-3.5 px-4">
+                    <td colSpan={9} className="py-3.5 px-4">
                       <div className="h-4 bg-slate-100 dark:bg-white/[0.05] rounded w-full"></div>
                     </td>
                   </tr>
@@ -267,6 +272,10 @@ export const StockMovementsPage: React.FC = () => {
                       </Link>
                     </td>
 
+                    <td className="py-3 px-3 text-right font-mono font-medium text-slate-500 whitespace-nowrap">
+                      {m.stockBefore ?? (m.stockAfter - m.quantityDelta)} {m.unit}
+                    </td>
+
                     <td
                       className={`py-3 px-3 text-right font-bold whitespace-nowrap ${
                         m.quantityDelta > 0
@@ -277,12 +286,13 @@ export const StockMovementsPage: React.FC = () => {
                       {m.quantityDelta > 0 ? `+${m.quantityDelta}` : m.quantityDelta} {m.unit}
                     </td>
 
-                    <td className="py-3 px-3 text-right font-mono font-medium whitespace-nowrap">
+                    <td className="py-3 px-3 text-right font-mono font-extrabold text-slate-800 dark:text-slate-100 whitespace-nowrap">
                       {m.stockAfter} {m.unit}
                     </td>
 
                     <td className="py-3 px-3 font-mono font-semibold text-slate-800 dark:text-slate-200 whitespace-nowrap">
-                      {m.referenceNumber}
+                      <div>{m.referenceNumber}</div>
+                      {m.reason && <div className="text-[10px] text-slate-400 font-sans font-normal">{m.reason}</div>}
                     </td>
 
                     <td className="py-3 px-3 whitespace-nowrap">
@@ -299,7 +309,7 @@ export const StockMovementsPage: React.FC = () => {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={8} className="py-12 text-center text-slate-400 space-y-2">
+                  <td colSpan={9} className="py-12 text-center text-slate-400 space-y-2">
                     <ArrowRightLeft className="w-8 h-8 mx-auto text-slate-400" />
                     <p className="font-semibold text-slate-600 dark:text-slate-300">
                       No stock movement entries found

@@ -28,4 +28,18 @@ export const notificationService = {
     notificationsState = notificationsState.filter((n) => n.id !== id);
     return [...notificationsState];
   },
+
+  async addNotification(
+    item: Omit<NotificationItem, 'id' | 'isRead'> & { timestamp?: string }
+  ): Promise<NotificationItem> {
+    const newNotif: NotificationItem = {
+      ...item,
+      id: `notif-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      isRead: false,
+      timestamp: item.timestamp || new Date().toISOString(),
+      priority: item.priority || 'medium',
+    };
+    notificationsState.unshift(newNotif);
+    return newNotif;
+  },
 };

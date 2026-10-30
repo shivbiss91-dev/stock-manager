@@ -9,6 +9,13 @@ import { stockMovementService } from '../../services/stockMovementService';
 import { MOCK_WAREHOUSES } from '../../data/warehouses';
 import { useAuthStore } from '../../store/authStore';
 import { ArrowLeftRight, Truck, AlertCircle, CheckCircle2 } from 'lucide-react';
+import {
+  PREDEFINED_UNITS,
+  PredefinedUnit,
+  normalizeUnitCode,
+  convertToBaseQuantity,
+  DEFAULT_PACKAGING_CONVERSIONS,
+} from '../../utils/unitConversions';
 
 interface TransferStockModalProps {
   item: ComputedInventoryItem | null;
@@ -26,6 +33,7 @@ export const TransferStockModal: React.FC<TransferStockModalProps> = ({
   const { user } = useAuthStore();
   const [targetWarehouseId, setTargetWarehouseId] = useState('wh-002');
   const [quantity, setQuantity] = useState<number>(20);
+  const [transferUnit, setTransferUnit] = useState<PredefinedUnit>(normalizeUnitCode(item?.unit));
   const [vehicleNumber, setVehicleNumber] = useState('MH-04-GP-8842');
   const [notes, setNotes] = useState('Consolidated transit dispatch');
   const [isLoading, setIsLoading] = useState(false);
@@ -34,16 +42,18 @@ export const TransferStockModal: React.FC<TransferStockModalProps> = ({
   if (!item) return null;
 
   const targetWh = MOCK_WAREHOUSES.find((w) => w.id === targetWarehouseId);
+  const conversions = item.packagingConversions || DEFAULT_PACKAGING_CONVERSIONS;
+  const qtyInBase = convertToBaseQuantity(quantity, transferUnit, conversions);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (quantity <= 0) {
+    if (quantity <= 0 || qtyInBase <= 0) {
       setError('Please specify a transfer quantity greater than 0.');
       return;
     }
-    if (quantity > item.currentStock) {
+    if (qtyInBase > item.currentStock) {
       setError(
-        `Cannot transfer ${quantity} ${item.unit}. Only ${item.currentStock} ${item.unit} available in current warehouse.`
+        `Cannot transfer ${quantity} ${transferUnit} (${qtyInBase} ${item.unit}). Only ${item.currentStock} ${item.unit} available in current warehouse.`
       );
       return;
     }
@@ -59,7 +69,7 @@ export const TransferStockModal: React.FC<TransferStockModalProps> = ({
       // 1. Deduct from origin warehouse
       await inventoryService.updateStock(
         item.id,
-        -quantity,
+        -qtyInBase,
         `Inter-warehouse transfer to ${targetWh?.name}`,
         user?.name || 'Authorized Staff'
       );
@@ -69,14 +79,16 @@ export const TransferStockModal: React.FC<TransferStockModalProps> = ({
         itemId: item.id,
         date: new Date().toISOString(),
         type: 'transfer',
-        quantityDelta: -quantity,
-        stockAfter: item.currentStock - quantity,
+        stockBefore: item.currentStock,
+        quantityDelta: -qtyInBase,
+        stockAfter: item.currentStock - qtyInBase,
         unit: item.unit,
         userName: user?.name || 'Priya Patel',
         userRole: user?.role || 'Manager',
         referenceNumber: `TR-2026-${Math.floor(100 + Math.random() * 900)}`,
         referenceType: 'Transfer',
-        notes: `Transfer to ${targetWh?.name} via Truck ${vehicleNumber}. Notes: ${notes}`,
+        reason: `Transfer to ${targetWh?.name}`,
+        notes: `Transfer ${quantity} ${transferUnit} (${qtyInBase} ${item.unit}) to ${targetWh?.name} via Truck ${vehicleNumber}. Notes: ${notes}`,
       });
 
       setIsLoading(false);
@@ -138,16 +150,32 @@ export const TransferStockModal: React.FC<TransferStockModalProps> = ({
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-3.5">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
           <Input
-            label={`Transfer Quantity (${item.unit})`}
+            label="Transfer Quantity"
             type="number"
             min={1}
-            max={item.currentStock}
             value={quantity}
             onChange={(e) => setQuantity(parseInt(e.target.value) || 0)}
             required
           />
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+              Transfer Unit *
+            </label>
+            <select
+              value={transferUnit}
+              onChange={(e) => setTransferUnit(e.target.value as PredefinedUnit)}
+              className="w-full text-xs rounded-xl border border-slate-200 dark:border-white/[0.08] bg-slate-50 dark:bg-[#1A1D26] px-3 py-2 text-slate-800 dark:text-[#F2F4F8] focus:outline-none focus:ring-2 focus:ring-accent-orange"
+            >
+              {PREDEFINED_UNITS.map((u) => (
+                <option key={u.code} value={u.code} className="dark:bg-dark-card">
+                  {u.label}
+                </option>
+              ))}
+            </select>
+          </div>
 
           <Input
             label="Fleet Vehicle Number"
@@ -157,6 +185,12 @@ export const TransferStockModal: React.FC<TransferStockModalProps> = ({
             required
           />
         </div>
+
+        {transferUnit !== item.unit && (
+          <p className="text-xs text-blue-600 dark:text-blue-400 font-medium">
+            ≈ Converted Volume: {qtyInBase.toLocaleString('en-IN')} {item.unit}
+          </p>
+        )}
 
         <Input
           label="Transfer Manifest Notes"

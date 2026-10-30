@@ -10,12 +10,26 @@ interface NotificationStore {
   markAsRead: (id: string) => Promise<void>;
   markAllAsRead: () => Promise<void>;
   deleteNotification: (id: string) => Promise<void>;
+  addNotification: (
+    item: Omit<NotificationItem, 'id' | 'isRead'> & { timestamp?: string }
+  ) => Promise<void>;
 }
 
 export const useNotificationStore = create<NotificationStore>((set, get) => ({
   notifications: [],
   unreadCount: 0,
   isLoading: false,
+
+  addNotification: async (item) => {
+    const created = await notificationService.addNotification(item);
+    set((state) => {
+      const next = [created, ...state.notifications];
+      return {
+        notifications: next,
+        unreadCount: next.filter((n) => !n.isRead).length,
+      };
+    });
+  },
 
   loadNotifications: async () => {
     set({ isLoading: true });

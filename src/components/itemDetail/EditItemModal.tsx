@@ -1,11 +1,18 @@
 import React, { useState } from 'react';
-import { X, CheckCircle2, AlertCircle, ShieldAlert, FileText } from 'lucide-react';
+import { X, CheckCircle2, AlertCircle, ShieldAlert, FileText, Layers } from 'lucide-react';
 import { ComputedInventoryItem } from '../../types/inventory';
 import { useAuthStore } from '../../store/authStore';
 import { inventoryService } from '../../services/inventoryService';
 import { approvalsService } from '../../services/approvalsService';
 import { useNotificationStore } from '../../store/notificationStore';
 import { formatINR } from '../../utils/formatINR';
+import {
+  PREDEFINED_UNITS,
+  PredefinedUnit,
+  normalizeUnitCode,
+  PackagingConversions,
+  DEFAULT_PACKAGING_CONVERSIONS,
+} from '../../utils/unitConversions';
 
 interface EditItemModalProps {
   item: ComputedInventoryItem;
@@ -27,11 +34,24 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({
 
   const [name, setName] = useState(item.name);
   const [sku, setSku] = useState(item.sku);
+  const [unit, setUnit] = useState<PredefinedUnit>(normalizeUnitCode(item.unit));
   const [materialSubtype, setMaterialSubtype] = useState(item.materialSubtype);
   const [rackLocation, setRackLocation] = useState(item.rackLocation);
   const [sellingPrice, setSellingPrice] = useState(item.sellingPrice.toString());
   const [costPrice, setCostPrice] = useState(item.costPrice.toString());
   const [reorderLevel, setReorderLevel] = useState(item.reorderLevel.toString());
+  const [reorderQuantity, setReorderQuantity] = useState(
+    (item.reorderQuantity || item.reorderLevel * 2).toString()
+  );
+  const [boxMultiplier, setBoxMultiplier] = useState(
+    (item.packagingConversions?.boxMultiplier || 20).toString()
+  );
+  const [cartonMultiplier, setCartonMultiplier] = useState(
+    (item.packagingConversions?.cartonMultiplier || 100).toString()
+  );
+  const [bundleMultiplier, setBundleMultiplier] = useState(
+    (item.packagingConversions?.bundleMultiplier || 25).toString()
+  );
   const [description, setDescription] = useState(item.description);
 
   // Approval request specific fields
@@ -48,6 +68,10 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({
     const parsedSelling = parseFloat(sellingPrice);
     const parsedCost = parseFloat(costPrice);
     const parsedReorder = parseInt(reorderLevel, 10);
+    const parsedReorderQty = parseInt(reorderQuantity, 10) || parsedReorder * 2;
+    const parsedBox = parseInt(boxMultiplier, 10) || 20;
+    const parsedCarton = parseInt(cartonMultiplier, 10) || 100;
+    const parsedBundle = parseInt(bundleMultiplier, 10) || 25;
 
     if (isNaN(parsedSelling) || parsedSelling <= 0) {
       setErrorMsg('Please specify a valid selling price greater than ₹0.');
@@ -58,6 +82,14 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({
       return;
     }
 
+    const updatedPackaging: PackagingConversions = {
+      baseUnit: unit === 'UNT' ? 'UNT' : 'PCS',
+      dozenMultiplier: 12,
+      boxMultiplier: parsedBox,
+      cartonMultiplier: parsedCarton,
+      bundleMultiplier: parsedBundle,
+    };
+
     setIsSubmitting(true);
     try {
       if (isAdmin) {
@@ -65,11 +97,14 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({
         const updated = await inventoryService.updateItem(item.id, {
           name: name.trim(),
           sku: sku.trim(),
+          unit,
           materialSubtype: materialSubtype.trim(),
           rackLocation: rackLocation.trim(),
           sellingPrice: parsedSelling,
           costPrice: isNaN(parsedCost) ? item.costPrice : parsedCost,
           reorderLevel: parsedReorder,
+          reorderQuantity: parsedReorderQty,
+          packagingConversions: updatedPackaging,
           description: description.trim(),
         });
 
@@ -95,6 +130,9 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({
         }
         if (name.trim() !== item.name) {
           changes.push(`Name change to "${name.trim()}"`);
+        }
+        if (unit !== item.unit) {
+          changes.push(`Unit: ${item.unit} ➔ ${unit}`);
         }
         if (parsedReorder !== item.reorderLevel) {
           changes.push(`Reorder level: ${item.reorderLevel} ➔ ${parsedReorder}`);
@@ -247,13 +285,44 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({
 
             <div>
               <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                Reorder Threshold ({item.unit}) *
+                Unit of Measurement *
+              </label>
+              <select
+                value={unit}
+                onChange={(e) => setUnit(e.target.value as PredefinedUnit)}
+                className="w-full px-3 py-2 text-sm template-input border border-slate-200 dark:border-white/[0.08] rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-accent-orange/30"
+              >
+                {PREDEFINED_UNITS.map((u) => (
+                  <option key={u.code} value={u.code} className="dark:bg-dark-card">
+                    {u.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                Minimum Stock Threshold ({unit}) *
               </label>
               <input
                 type="number"
                 min="0"
                 value={reorderLevel}
                 onChange={(e) => setReorderLevel(e.target.value)}
+                required
+                className="w-full px-3 py-2 text-sm template-input border border-slate-200 dark:border-white/[0.08] rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-accent-orange/30"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                Suggested Reorder Quantity ({unit}) *
+              </label>
+              <input
+                type="number"
+                min="1"
+                value={reorderQuantity}
+                onChange={(e) => setReorderQuantity(e.target.value)}
                 required
                 className="w-full px-3 py-2 text-sm template-input border border-slate-200 dark:border-white/[0.08] rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-accent-orange/30"
               />
@@ -275,6 +344,72 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({
                 />
               </div>
             )}
+          </div>
+
+          {/* Product-Specific Packaging Conversions Configuration */}
+          <div className="p-4 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/[0.06] space-y-3">
+            <div className="flex items-center gap-2">
+              <Layers className="w-4 h-4 text-accent-orange" />
+              <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                Packaging Multipliers & Conversions (Base: {unit === 'UNT' ? 'UNT' : 'PCS'})
+              </h4>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+              <div className="p-2.5 rounded-lg bg-white dark:bg-white/[0.03] border border-slate-200 dark:border-white/[0.06]">
+                <span className="text-slate-500 block mb-1">1 Dozen (DOZ)</span>
+                <span className="font-extrabold text-slate-800 dark:text-white">12 {unit === 'UNT' ? 'UNT' : 'PCS'}</span>
+                <span className="text-[10px] text-slate-400 block mt-0.5">Fixed standard</span>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  1 Box (BOX) =
+                </label>
+                <div className="flex items-center gap-1.5">
+                  <input
+                    type="number"
+                    min="1"
+                    value={boxMultiplier}
+                    onChange={(e) => setBoxMultiplier(e.target.value)}
+                    className="w-full px-2.5 py-1.5 text-xs template-input border border-slate-200 dark:border-white/[0.08] rounded-lg text-slate-900 dark:text-white"
+                  />
+                  <span className="text-[11px] text-slate-400">{unit === 'UNT' ? 'UNT' : 'PCS'}</span>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  1 Carton (CTN) =
+                </label>
+                <div className="flex items-center gap-1.5">
+                  <input
+                    type="number"
+                    min="1"
+                    value={cartonMultiplier}
+                    onChange={(e) => setCartonMultiplier(e.target.value)}
+                    className="w-full px-2.5 py-1.5 text-xs template-input border border-slate-200 dark:border-white/[0.08] rounded-lg text-slate-900 dark:text-white"
+                  />
+                  <span className="text-[11px] text-slate-400">{unit === 'UNT' ? 'UNT' : 'PCS'}</span>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  1 Bundle (BDL) =
+                </label>
+                <div className="flex items-center gap-1.5">
+                  <input
+                    type="number"
+                    min="1"
+                    value={bundleMultiplier}
+                    onChange={(e) => setBundleMultiplier(e.target.value)}
+                    className="w-full px-2.5 py-1.5 text-xs template-input border border-slate-200 dark:border-white/[0.08] rounded-lg text-slate-900 dark:text-white"
+                  />
+                  <span className="text-[11px] text-slate-400">{unit === 'UNT' ? 'UNT' : 'PCS'}</span>
+                </div>
+              </div>
+            </div>
           </div>
 
           <div>

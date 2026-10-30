@@ -4,12 +4,14 @@ import {
   Package,
   Search,
   Plus,
+  Minus,
   Eye,
   SlidersHorizontal,
   ChevronLeft,
   ChevronRight,
   Printer,
   ArrowRightLeft,
+  Edit,
 } from 'lucide-react';
 import { inventoryService } from '../../services/inventoryService';
 import { ComputedInventoryItem, MaterialCategory } from '../../types/inventory';
@@ -18,6 +20,7 @@ import { formatINR } from '../../utils/formatINR';
 import { AddItemModal } from '../../components/dashboard/AddItemModal';
 import { BarcodeLabelModal } from '../../components/itemDetail/BarcodeLabelModal';
 import { TransferStockModal } from '../../components/itemDetail/TransferStockModal';
+import { QuickStockAdjustmentModal } from '../../components/dashboard/QuickStockAdjustmentModal';
 import { useAuthStore } from '../../store/authStore';
 
 export const AllItemsPage: React.FC = () => {
@@ -50,6 +53,8 @@ export const AllItemsPage: React.FC = () => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [selectedItemForLabel, setSelectedItemForLabel] = useState<ComputedInventoryItem | null>(null);
   const [selectedItemForTransfer, setSelectedItemForTransfer] = useState<ComputedInventoryItem | null>(null);
+  const [adjustmentItem, setAdjustmentItem] = useState<ComputedInventoryItem | null>(null);
+  const [adjustmentMode, setAdjustmentMode] = useState<'add' | 'deduct' | 'direct'>('add');
 
   // Load items
   useEffect(() => {
@@ -326,20 +331,50 @@ export const AllItemsPage: React.FC = () => {
                       </span>
                     </td>
 
-                    {/* Available Stock */}
+                    {/* Available Stock with manual +/- controls and direct edit */}
                     <td className="py-3 px-3 text-right">
-                      <span
-                        className={`font-bold block ${
-                          item.currentStock <= item.reorderLevel
-                            ? 'text-amber-500'
-                            : 'text-emerald-500'
-                        }`}
-                      >
-                        {item.currentStock.toLocaleString('en-IN')}{' '}
-                        <span className="text-[10px] font-normal text-slate-400">{item.unit}</span>
-                      </span>
-                      <span className="text-[10px] text-slate-400">
-                        Min: {item.reorderLevel}
+                      <div className="flex items-center justify-end gap-1.5 mb-1">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setAdjustmentItem(item);
+                            setAdjustmentMode('deduct');
+                          }}
+                          className="w-5 h-5 rounded flex items-center justify-center bg-rose-500/10 hover:bg-rose-500 text-rose-500 hover:text-white transition-colors border border-rose-500/20"
+                          title="Deduct Stock (-)"
+                        >
+                          <Minus className="w-3 h-3" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setAdjustmentItem(item);
+                            setAdjustmentMode('direct');
+                          }}
+                          className={`font-bold hover:text-accent-orange transition-colors ${
+                            item.currentStock <= item.reorderLevel
+                              ? 'text-amber-500'
+                              : 'text-emerald-500'
+                          }`}
+                          title="Click to directly edit stock balance"
+                        >
+                          {item.currentStock.toLocaleString('en-IN')}{' '}
+                          <span className="text-[10px] font-normal text-slate-400">{item.unit}</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setAdjustmentItem(item);
+                            setAdjustmentMode('add');
+                          }}
+                          className="w-5 h-5 rounded flex items-center justify-center bg-emerald-500/10 hover:bg-emerald-500 text-emerald-500 hover:text-white transition-colors border border-emerald-500/20"
+                          title="Add Stock (+)"
+                        >
+                          <Plus className="w-3 h-3" />
+                        </button>
+                      </div>
+                      <span className="text-[10px] text-slate-400 block">
+                        Min: {item.reorderLevel} {item.unit}
                       </span>
                     </td>
 
@@ -370,6 +405,16 @@ export const AllItemsPage: React.FC = () => {
                         >
                           <Eye className="w-4 h-4" />
                         </Link>
+                        <button
+                          onClick={() => {
+                            setAdjustmentItem(item);
+                            setAdjustmentMode('direct');
+                          }}
+                          className="p-1.5 text-slate-400 hover:text-accent-orange hover:bg-white/10 rounded-lg transition"
+                          title="Stock Adjustment & Calibration"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </button>
                         <button
                           onClick={() => setSelectedItemForTransfer(item)}
                           className="p-1.5 text-slate-400 hover:text-white hover:bg-white/10 rounded-lg transition"
@@ -458,6 +503,18 @@ export const AllItemsPage: React.FC = () => {
           isOpen={!!selectedItemForTransfer}
           onClose={() => setSelectedItemForTransfer(null)}
           onTransferComplete={() => {
+            inventoryService.getItems({ page, pageSize: 20 }).then((res) => setItems(res.items));
+          }}
+        />
+      )}
+
+      {adjustmentItem && (
+        <QuickStockAdjustmentModal
+          item={adjustmentItem}
+          isOpen={!!adjustmentItem}
+          initialMode={adjustmentMode}
+          onClose={() => setAdjustmentItem(null)}
+          onSuccess={() => {
             inventoryService.getItems({ page, pageSize: 20 }).then((res) => setItems(res.items));
           }}
         />

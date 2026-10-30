@@ -16,6 +16,7 @@ import { InterHubTransfer } from '../../types/purchases';
 import { formatDate } from '../../utils/dateUtils';
 import { useAuthStore } from '../../store/authStore';
 import { useNotificationStore } from '../../store/notificationStore';
+import { PREDEFINED_UNITS, PredefinedUnit } from '../../utils/unitConversions';
 
 export const TransfersPage: React.FC = () => {
   const { user } = useAuthStore();
@@ -33,6 +34,7 @@ export const TransfersPage: React.FC = () => {
   const [driverName, setDriverName] = useState('Ramesh Yadav');
   const [driverPhone, setDriverPhone] = useState('+91 98200 44912');
   const [quantity, setQuantity] = useState('30');
+  const [transferUnit, setTransferUnit] = useState<PredefinedUnit>('PCS');
 
   useEffect(() => {
     let isMounted = true;
@@ -71,7 +73,7 @@ export const TransfersPage: React.FC = () => {
           name: 'Gurjan BWP Marine Veneers & Laminates - 18mm (8x4 ft)',
           sku: 'WD-VEN-GUR-0001',
           quantity: qty,
-          unit: 'sheets',
+          unit: transferUnit,
         },
       ],
     });
@@ -350,18 +352,37 @@ export const TransfersPage: React.FC = () => {
                 </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Transfer Quantity (Sheets) *
-                </label>
-                <input
-                  type="number"
-                  min="1"
-                  value={quantity}
-                  onChange={(e) => setQuantity(e.target.value)}
-                  required
-                  className="w-full px-3 py-2 text-xs template-input border border-slate-200 dark:border-white/[0.08] rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-accent-orange/30"
-                />
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    Transfer Quantity *
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={quantity}
+                    onChange={(e) => setQuantity(e.target.value)}
+                    required
+                    className="w-full px-3 py-2 text-xs template-input border border-slate-200 dark:border-white/[0.08] rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-accent-orange/30"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    Unit of Measurement *
+                  </label>
+                  <select
+                    value={transferUnit}
+                    onChange={(e) => setTransferUnit(e.target.value as PredefinedUnit)}
+                    className="w-full px-3 py-2 text-xs template-input border border-slate-200 dark:border-white/[0.08] rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-accent-orange/30"
+                  >
+                    {PREDEFINED_UNITS.map((u) => (
+                      <option key={u.code} value={u.code} className="dark:bg-dark-card">
+                        {u.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
               <div className="pt-3 border-t border-slate-200 dark:border-white/[0.06] flex items-center justify-end gap-2">

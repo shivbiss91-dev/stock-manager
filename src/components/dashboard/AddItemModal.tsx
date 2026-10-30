@@ -8,7 +8,13 @@ import { MaterialCategory, UnitOfMeasurement } from '../../types/inventory';
 import { MATERIAL_CATEGORIES } from '../../data/materialCategories';
 import { MOCK_SUPPLIERS } from '../../data/suppliers';
 import { MOCK_WAREHOUSES } from '../../data/warehouses';
-import { PackagePlus, CheckCircle2 } from 'lucide-react';
+import { PackagePlus, CheckCircle2, Layers } from 'lucide-react';
+import {
+  PREDEFINED_UNITS,
+  PredefinedUnit,
+  PackagingConversions,
+  DEFAULT_PACKAGING_CONVERSIONS,
+} from '../../utils/unitConversions';
 
 interface AddItemModalProps {
   isOpen: boolean;
@@ -22,8 +28,12 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({ isOpen, onClose, onI
   const [category, setCategory] = useState<MaterialCategory>('wood');
   const [subtype, setSubtype] = useState('Plywood');
   const [currentStock, setCurrentStock] = useState<number>(50);
-  const [unit, setUnit] = useState<UnitOfMeasurement>('sheets');
+  const [unit, setUnit] = useState<PredefinedUnit>('PCS');
   const [reorderLevel, setReorderLevel] = useState<number>(20);
+  const [reorderQuantity, setReorderQuantity] = useState<number>(40);
+  const [boxMultiplier, setBoxMultiplier] = useState<number>(20);
+  const [cartonMultiplier, setCartonMultiplier] = useState<number>(100);
+  const [bundleMultiplier, setBundleMultiplier] = useState<number>(25);
   const [costPrice, setCostPrice] = useState<number>(1200);
   const [sellingPrice, setSellingPrice] = useState<number>(1450);
   const [gstRate, setGstRate] = useState<number>(18);
@@ -59,6 +69,14 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({ isOpen, onClose, onI
       const wh = MOCK_WAREHOUSES.find((w) => w.id === warehouseId) || MOCK_WAREHOUSES[1];
       const sup = MOCK_SUPPLIERS.find((s) => s.id === supplierId) || MOCK_SUPPLIERS[0];
 
+      const packagingConversions: PackagingConversions = {
+        baseUnit: unit === 'UNT' ? 'UNT' : 'PCS',
+        dozenMultiplier: 12,
+        boxMultiplier: Number(boxMultiplier) || 20,
+        cartonMultiplier: Number(cartonMultiplier) || 100,
+        bundleMultiplier: Number(bundleMultiplier) || 25,
+      };
+
       await inventoryService.createItem({
         name: name.trim(),
         sku: sku.trim().toUpperCase(),
@@ -67,7 +85,10 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({ isOpen, onClose, onI
         description: `Industrial wholesale item: ${name}.`,
         currentStock: Number(currentStock),
         unit,
+        baseUnit: unit === 'UNT' ? 'UNT' : 'PCS',
         reorderLevel: Number(reorderLevel),
+        reorderQuantity: Number(reorderQuantity) || Number(reorderLevel) * 2,
+        packagingConversions,
         costPrice: Number(costPrice),
         sellingPrice: Number(sellingPrice),
         gstRate: Number(gstRate),
@@ -146,7 +167,7 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({ isOpen, onClose, onI
           />
 
           <Input
-            label="Initial Stock Quantity"
+            label={`Initial Stock Quantity (${unit})`}
             type="number"
             min={0}
             value={currentStock}
@@ -155,26 +176,30 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({ isOpen, onClose, onI
           />
 
           <Select
-            label="Unit of Measurement"
+            label="Unit of Measurement *"
             value={unit}
-            onChange={(e) => setUnit(e.target.value as UnitOfMeasurement)}
-            options={[
-              { value: 'sheets', label: 'Sheets' },
-              { value: 'pieces', label: 'Pieces' },
-              { value: 'boxes', label: 'Boxes' },
-              { value: 'rolls', label: 'Rolls' },
-              { value: 'bundles', label: 'Bundles' },
-              { value: 'kg', label: 'Kilograms (kg)' },
-              { value: 'meters', label: 'Meters' },
-            ]}
+            onChange={(e) => setUnit(e.target.value as PredefinedUnit)}
+            options={PREDEFINED_UNITS.map((u) => ({
+              value: u.code,
+              label: `${u.label}${u.isPackUnit ? ` - ${u.description}` : ''}`,
+            }))}
           />
 
           <Input
-            label="Reorder Threshold"
+            label={`Minimum Stock Threshold (${unit})`}
             type="number"
             min={1}
             value={reorderLevel}
             onChange={(e) => setReorderLevel(Math.max(1, parseInt(e.target.value) || 1))}
+            required
+          />
+
+          <Input
+            label={`Suggested Reorder Quantity (${unit})`}
+            type="number"
+            min={1}
+            value={reorderQuantity}
+            onChange={(e) => setReorderQuantity(Math.max(1, parseInt(e.target.value) || 1))}
             required
           />
 
@@ -242,6 +267,72 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({ isOpen, onClose, onI
               label: s.companyName,
             }))}
           />
+        </div>
+
+        {/* Product-Specific Packaging Conversions */}
+        <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/[0.06] space-y-2.5">
+          <div className="flex items-center gap-2">
+            <Layers className="w-4 h-4 text-accent-orange" />
+            <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
+              Packaging Multipliers & Conversions (Base: {unit === 'UNT' ? 'UNT' : 'PCS'})
+            </span>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs">
+            <div className="p-2.5 rounded-lg bg-white dark:bg-white/[0.03] border border-slate-200 dark:border-white/[0.06]">
+              <span className="text-slate-400 block text-[11px]">1 Dozen (DOZ)</span>
+              <span className="font-extrabold text-slate-800 dark:text-white">12 {unit === 'UNT' ? 'UNT' : 'PCS'}</span>
+              <span className="text-[10px] text-slate-400 block mt-0.5">Standard fixed</span>
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                1 Box (BOX) =
+              </label>
+              <div className="flex items-center gap-1.5">
+                <input
+                  type="number"
+                  min="1"
+                  value={boxMultiplier}
+                  onChange={(e) => setBoxMultiplier(Math.max(1, parseInt(e.target.value) || 1))}
+                  className="w-full px-2.5 py-1.5 text-xs template-input border border-slate-200 dark:border-white/[0.08] rounded-lg text-slate-900 dark:text-white"
+                />
+                <span className="text-[11px] text-slate-400">{unit === 'UNT' ? 'UNT' : 'PCS'}</span>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                1 Carton (CTN) =
+              </label>
+              <div className="flex items-center gap-1.5">
+                <input
+                  type="number"
+                  min="1"
+                  value={cartonMultiplier}
+                  onChange={(e) => setCartonMultiplier(Math.max(1, parseInt(e.target.value) || 1))}
+                  className="w-full px-2.5 py-1.5 text-xs template-input border border-slate-200 dark:border-white/[0.08] rounded-lg text-slate-900 dark:text-white"
+                />
+                <span className="text-[11px] text-slate-400">{unit === 'UNT' ? 'UNT' : 'PCS'}</span>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                1 Bundle (BDL) =
+              </label>
+              <div className="flex items-center gap-1.5">
+                <input
+                  type="number"
+                  min="1"
+                  value={bundleMultiplier}
+                  onChange={(e) => setBundleMultiplier(Math.max(1, parseInt(e.target.value) || 1))}
+                  className="w-full px-2.5 py-1.5 text-xs template-input border border-slate-200 dark:border-white/[0.08] rounded-lg text-slate-900 dark:text-white"
+                />
+                <span className="text-[11px] text-slate-400">{unit === 'UNT' ? 'UNT' : 'PCS'}</span>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div className="flex justify-end gap-2 pt-4 border-t border-slate-100 dark:border-white/[0.06]">

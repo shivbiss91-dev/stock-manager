@@ -6,6 +6,25 @@ import {
   SalesVelocity,
 } from '../types/inventory';
 import { StockStatus } from '../types/common';
+import { stockMovementService } from './stockMovementService';
+import { notificationService } from './notificationService';
+import {
+  convertToBaseQuantity,
+  DEFAULT_PACKAGING_CONVERSIONS,
+} from '../utils/unitConversions';
+
+export interface StockAdjustmentInput {
+  mode?: 'add' | 'deduct' | 'direct';
+  adjustmentQuantity?: number;
+  delta?: number;
+  targetStock?: number;
+  unit?: string;
+  reason: string;
+  notes?: string;
+  userName?: string;
+  userRole?: string;
+  referenceNumber?: string;
+}
 
 // Local mutable repository for items
 let itemsDatabase: InventoryItem[] = [...MASTER_INVENTORY];
@@ -204,21 +223,101 @@ export const inventoryService = {
 
   async updateStock(
     itemId: string,
-    delta: number,
-    notes: string,
-    userName: string
+    deltaOrOptions: number | StockAdjustmentInput,
+    notesArg?: string,
+    userNameArg?: string
   ): Promise<ComputedInventoryItem> {
     await new Promise((res) => setTimeout(res, 50));
     const item = itemsDatabase.find((i) => i.id === itemId);
     if (!item) throw new Error('Item not found');
 
-    const nextStock = item.currentStock + delta;
+    const previousStock = item.currentStock;
+    let delta = 0;
+    let mode: 'add' | 'deduct' | 'direct' = 'add';
+    let reason = 'Stock Adjustment';
+    let notes = notesArg || '';
+    let unit = item.unit || 'PCS';
+    let userName = userNameArg || 'Authorized Staff';
+    let userRole = 'Staff';
+    let referenceNumber = `ADJ-${Date.now().toString().slice(-6)}`;
+
+    if (typeof deltaOrOptions === 'number') {
+      delta = deltaOrOptions;
+      mode = delta >= 0 ? 'add' : 'deduct';
+      reason = notesArg || (delta >= 0 ? 'Stock Addition (Inward)' : 'Stock Deduction (Outward)');
+    } else {
+      const opts = deltaOrOptions;
+      mode = opts.mode || (opts.delta !== undefined && opts.delta < 0 ? 'deduct' : 'add');
+      reason = opts.reason || 'Inventory Adjustment';
+      notes = opts.notes || '';
+      unit = opts.unit || item.unit || 'PCS';
+      userName = opts.userName || userNameArg || 'Authorized Staff';
+      userRole = opts.userRole || 'Staff';
+      referenceNumber = opts.referenceNumber || `ADJ-${Date.now().toString().slice(-6)}`;
+
+      const conv = item.packagingConversions || DEFAULT_PACKAGING_CONVERSIONS;
+
+      if (mode === 'direct') {
+        const target = opts.targetStock !== undefined ? opts.targetStock : (opts.adjustmentQuantity ?? previousStock);
+        const targetInBase = convertToBaseQuantity(target, unit, conv);
+        delta = targetInBase - previousStock;
+      } else {
+        const rawQty = opts.adjustmentQuantity !== undefined ? opts.adjustmentQuantity : Math.abs(opts.delta || 0);
+        const qtyInBase = convertToBaseQuantity(rawQty, unit, conv);
+        delta = mode === 'deduct' ? -qtyInBase : qtyInBase;
+      }
+    }
+
+    const nextStock = previousStock + delta;
     if (nextStock < 0) {
-      throw new Error(`Insufficient stock. Cannot reduce stock below 0 (Current: ${item.currentStock} ${item.unit})`);
+      throw new Error(`Insufficient stock. Cannot reduce stock below 0 (Current: ${previousStock} ${item.unit})`);
     }
 
     item.currentStock = nextStock;
     item.updatedAt = new Date().toISOString();
+
+    // Record every adjustment in the stock movement ledger
+    try {
+      await stockMovementService.addMovement({
+        itemId: item.id,
+        date: new Date().toISOString(),
+        type: 'adjustment',
+        stockBefore: previousStock,
+        quantityDelta: delta,
+        stockAfter: nextStock,
+        unit: item.unit,
+        userName,
+        userRole,
+        referenceNumber,
+        referenceType: 'Adjustment',
+        reason,
+        notes: notes ? `${reason} • ${notes}` : reason,
+      });
+    } catch (err) {
+      console.warn('Failed to record stock movement ledger entry:', err);
+    }
+
+    // Automatically trigger low-stock and out-of-stock alerts
+    try {
+      if (nextStock === 0) {
+        await notificationService.addNotification({
+          title: 'Out of Stock Alert',
+          message: `${item.name} (${item.sku}) is completely depleted (0 ${item.unit} on hand)!`,
+          type: 'out_of_stock',
+          priority: 'urgent',
+        });
+      } else if (nextStock <= item.reorderLevel) {
+        await notificationService.addNotification({
+          title: 'Low Stock Alert',
+          message: `${item.name} (${item.sku}) is at or below reorder threshold (${nextStock} ${item.unit} remaining, threshold: ${item.reorderLevel} ${item.unit}).`,
+          type: 'low_stock',
+          priority: 'high',
+        });
+      }
+    } catch (err) {
+      console.warn('Failed to dispatch stock alert notification:', err);
+    }
+
     return toComputedItem(item);
   },
 
@@ -240,6 +339,19 @@ export const inventoryService = {
     }
 
     Object.assign(item, patch, { updatedAt: new Date().toISOString() });
+
+    // Check if new reorderLevel triggers an alert with current stock
+    if (patch.reorderLevel !== undefined && item.currentStock <= item.reorderLevel && item.currentStock > 0) {
+      try {
+        await notificationService.addNotification({
+          title: 'Low Stock Alert (Threshold Updated)',
+          message: `${item.name} (${item.sku}) threshold was set to ${item.reorderLevel} ${item.unit} and current stock is ${item.currentStock} ${item.unit}.`,
+          type: 'low_stock',
+          priority: 'medium',
+        });
+      } catch {}
+    }
+
     return toComputedItem(item);
   },
 
