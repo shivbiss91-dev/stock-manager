@@ -24,7 +24,47 @@ export const OrderHistoryCarousel: React.FC<OrderHistoryCarouselProps> = ({ orde
   const [currentIndex, setCurrentIndex] = useState(0);
   const navigate = useNavigate();
 
-  if (!orders || orders.length === 0) return null;
+  if (!orders || orders.length === 0) {
+    return (
+      <Card
+        variant="glass"
+        noPadding
+        className="relative overflow-hidden flex flex-col justify-between min-h-[300px] sm:min-h-[320px] p-5"
+      >
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            <h3 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-[#F2F4F8] tracking-tight">
+              Order History
+            </h3>
+            <p className="text-xs text-slate-400 dark:text-[#9AA0AE]">Recent client dispatches</p>
+          </div>
+          <button
+            onClick={() => navigate('/sales/orders')}
+            className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-[#1A1D26] border border-slate-200 dark:border-white/[0.08] text-slate-600 dark:text-[#9AA0AE] flex items-center justify-center transition-all"
+            title="View full order list"
+          >
+            <Maximize2 className="w-4 h-4" strokeWidth={1.5} />
+          </button>
+        </div>
+
+        <div className="flex-1 flex flex-col items-center justify-center py-6 text-center">
+          <div className="w-12 h-12 rounded-2xl bg-brand-orange/10 text-brand-orange flex items-center justify-center mb-3">
+            <Box className="w-6 h-6" strokeWidth={1.5} />
+          </div>
+          <p className="text-sm font-semibold text-slate-800 dark:text-[#F2F4F8]">No Order History Yet</p>
+          <p className="text-xs text-slate-400 dark:text-[#9AA0AE] max-w-xs mt-1">
+            Billed customer invoices and dispatched orders will be tracked here in real-time.
+          </p>
+          <button
+            onClick={() => navigate('/sales/invoices')}
+            className="mt-4 px-3.5 py-1.5 text-xs font-medium rounded-xl bg-brand-orange text-white hover:bg-orange-600 transition-colors"
+          >
+            + Create New Invoice
+          </button>
+        </div>
+      </Card>
+    );
+  }
 
   const handlePrev = () => {
     setCurrentIndex((prev) => (prev === 0 ? orders.length - 1 : prev - 1));

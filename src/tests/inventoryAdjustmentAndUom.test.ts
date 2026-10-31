@@ -11,9 +11,12 @@ import {
 import { inventoryService } from '../services/inventoryService';
 import { stockMovementService } from '../services/stockMovementService';
 import { notificationService } from '../services/notificationService';
-import { MASTER_INVENTORY } from '../data/inventorySeed';
+import { MASTER_INVENTORY } from './fixtures/inventorySeed';
 
 describe('Inventory Master Catalog — Unit of Measurement Restrictions', () => {
+  beforeEach(() => {
+    inventoryService._seedInventoryForTesting(MASTER_INVENTORY);
+  });
   it('contains ONLY the 6 strictly allowed predefined units', () => {
     expect(PREDEFINED_UNIT_CODES).toHaveLength(6);
     expect(PREDEFINED_UNIT_CODES).toEqual(['PCS', 'UNT', 'DOZ', 'CTN', 'BOX', 'BDL']);

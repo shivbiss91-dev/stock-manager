@@ -1,9 +1,13 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeAll } from 'vitest';
 import { materialsService } from '../services/materialsService';
 import { inventoryService } from '../services/inventoryService';
 import { MATERIAL_CATEGORIES } from '../data/materialCategories';
+import { MASTER_INVENTORY } from './fixtures/inventorySeed';
 
 describe('Phase 3: Materials Categories Home', () => {
+  beforeAll(() => {
+    inventoryService._seedInventoryForTesting(MASTER_INVENTORY);
+  });
   it('returns all 8 primary material categories', async () => {
     const categories = await materialsService.getCategories('all');
     expect(categories.length).toBe(8);

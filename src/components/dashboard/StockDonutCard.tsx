@@ -116,36 +116,40 @@ export const StockDonutCard: React.FC<StockDonutCardProps> = ({
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie
-                data={segments}
+                data={totalItems === 0 ? [{ name: 'No Data', value: 1, percentage: 0, statusKey: 'in_stock' as const }] : segments}
                 cx="50%"
                 cy="85%"
                 startAngle={180}
                 endAngle={0}
                 innerRadius={68}
                 outerRadius={100}
-                paddingAngle={4}
+                paddingAngle={totalItems === 0 ? 0 : 4}
                 dataKey="value"
-                onClick={handleSegmentClick}
-                className="cursor-pointer focus:outline-none"
+                onClick={totalItems === 0 ? undefined : handleSegmentClick}
+                className={totalItems === 0 ? 'pointer-events-none' : 'cursor-pointer focus:outline-none'}
               >
-                {segments.map((entry, index) => {
-                  const isSelected = activeFilter === entry.statusKey;
-                  const isDimmed = activeFilter !== 'all' && !isSelected;
-                  const fillTexture = getTextureForStatus(entry.statusKey);
+                {totalItems === 0 ? (
+                  <Cell fill="rgba(255, 255, 255, 0.15)" stroke="rgba(255, 255, 255, 0.25)" strokeWidth={1} />
+                ) : (
+                  segments.map((entry, index) => {
+                    const isSelected = activeFilter === entry.statusKey;
+                    const isDimmed = activeFilter !== 'all' && !isSelected;
+                    const fillTexture = getTextureForStatus(entry.statusKey);
 
-                  return (
-                    <Cell
-                      key={`cell-${index}`}
-                      fill={fillTexture}
-                      opacity={isDimmed ? 0.35 : 1}
-                      stroke={isSelected ? '#FFFFFF' : '#FF6B35'}
-                      strokeWidth={isSelected ? 3 : 1.5}
-                      onMouseEnter={() => setHoveredIndex(index)}
-                      onMouseLeave={() => setHoveredIndex(null)}
-                      className="transition-all duration-150 hover:brightness-110"
-                    />
-                  );
-                })}
+                    return (
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={fillTexture}
+                        opacity={isDimmed ? 0.35 : 1}
+                        stroke={isSelected ? '#FFFFFF' : '#FF6B35'}
+                        strokeWidth={isSelected ? 3 : 1.5}
+                        onMouseEnter={() => setHoveredIndex(index)}
+                        onMouseLeave={() => setHoveredIndex(null)}
+                        className="transition-all duration-150 hover:brightness-110"
+                      />
+                    );
+                  })
+                )}
               </Pie>
               <Tooltip
                 content={({ active, payload }) => {

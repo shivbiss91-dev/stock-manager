@@ -1,10 +1,9 @@
 import { PeriodType } from '../types/common';
 import { inventoryService } from './inventoryService';
-import { MOCK_ORDERS_STATUS_BREAKDOWN, MOCK_ORDER_HISTORY, OrdersStatusSummary } from '../data/ordersData';
-import { MOCK_ACTIVE_SHIPMENTS } from '../data/logisticsData';
-import { OrderHistoryItem } from '../types/sales';
+import { OrdersStatusSummary } from '../data/ordersData';
+import { OrderHistoryItem, Invoice, Customer } from '../types/sales';
 import { ActiveShipment } from '../types/logistics';
-import { MOCK_CUSTOMERS } from '../data/customers';
+import { StorageService, STORAGE_KEYS } from './storageService';
 
 export interface DashboardKPICard {
   id: string;
@@ -43,8 +42,6 @@ const inMemoryLayouts = new Map<string, UserDashboardLayout>();
 
 export const dashboardService = {
   async getKPIs(period: PeriodType, warehouseId: string): Promise<DashboardKPICard[]> {
-    await new Promise((res) => setTimeout(res, 50));
-
     const { items, totalCount, statusCounts } = await inventoryService.getItems({
       warehouseId,
       pageSize: 5000,
@@ -56,26 +53,44 @@ export const dashboardService = {
       0
     );
 
-    // Outstanding payments from customers
-    const totalOutstandingINR = MOCK_CUSTOMERS.reduce(
-      (sum, c) => sum + c.outstandingBalanceINR,
+    // Outstanding payments from stored customers and unpaid invoices
+    const customers = StorageService.get<Customer[]>(STORAGE_KEYS.CUSTOMERS, []);
+    const invoices = StorageService.get<Invoice[]>(STORAGE_KEYS.INVOICES, []);
+
+    const customerOutstanding = customers.reduce(
+      (sum, c) => sum + (c.outstandingBalanceINR || 0),
       0
     );
+    const invoiceOutstanding = invoices
+      .filter((inv) => inv.status === 'overdue' || inv.status === 'sent' || inv.status === 'partially_paid')
+      .reduce((sum, inv) => sum + (inv.balanceDue || 0), 0);
+    const totalOutstandingINR = customerOutstanding + invoiceOutstanding;
 
-    // Period scaling factor for realistic metrics
-    const multiplier =
-      period === 'today'
-        ? 0.035
-        : period === 'week'
-        ? 0.22
-        : period === 'month'
-        ? 1.0
-        : period === 'year'
-        ? 12.0
-        : 1.0;
+    // Filter real invoices for today and current month/year
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const monthStr = todayStr.slice(0, 7);
+    const yearStr = todayStr.slice(0, 4);
 
-    const todaySales = Math.round(425000 * (period === 'today' ? 1.0 : multiplier > 1 ? 1.0 : 0.8));
-    const monthSales = Math.round(6840000 * multiplier);
+    const todayInvoices = invoices.filter((inv) => inv.date?.startsWith(todayStr));
+    const todaySales = todayInvoices.reduce((sum, inv) => sum + (inv.grandTotal || 0), 0);
+
+    const monthInvoices = invoices.filter((inv) =>
+      period === 'year' ? inv.date?.startsWith(yearStr) : inv.date?.startsWith(monthStr)
+    );
+    const monthSales = monthInvoices.reduce((sum, inv) => sum + (inv.grandTotal || 0), 0);
+
+    const makeSparkline = (val: number): number[] => {
+      if (val === 0) return [0, 0, 0, 0, 0, 0, 0];
+      return [
+        Math.round(val * 0.9),
+        Math.round(val * 0.94),
+        Math.round(val * 0.92),
+        Math.round(val * 0.97),
+        Math.round(val * 0.95),
+        Math.round(val * 0.98),
+        val,
+      ];
+    };
 
     return [
       {
@@ -83,70 +98,79 @@ export const dashboardService = {
         title: 'Total Items',
         value: totalCount.toLocaleString('en-IN'),
         numericValue: totalCount,
-        subtitle: 'Master SKUs recorded',
-        trendText: '+12% vs last quarter',
-        trendPercent: 12.0,
+        subtitle: totalCount > 0 ? `${totalCount} Master SKUs recorded` : 'No SKUs added yet',
+        trendText: totalCount > 0 ? 'Active catalog' : 'No catalog items',
+        trendPercent: 0,
         isPositive: true,
-        sparkline: [3100, 3180, 3240, 3290, 3350, 3390, totalCount],
+        sparkline: makeSparkline(totalCount),
       },
       {
         id: 'total_pieces',
         title: 'Total Pieces',
         value: totalPieces.toLocaleString('en-IN'),
         numericValue: totalPieces,
-        subtitle: 'Physical inventory volume',
-        trendText: '+4.8% inward shipments',
-        trendPercent: 4.8,
+        subtitle: totalPieces > 0 ? `${totalPieces.toLocaleString('en-IN')} physical inventory` : '0 physical inventory volume',
+        trendText: totalPieces > 0 ? 'Stock recorded' : 'No physical stock',
+        trendPercent: 0,
         isPositive: true,
-        sparkline: [138000, 140500, 142000, 145000, 144200, 146900, totalPieces],
+        sparkline: makeSparkline(totalPieces),
       },
       {
         id: 'stock_value',
         title: 'Stock Value',
-        value: totalStockValueINR >= 10000000 
-          ? `₹${(totalStockValueINR / 10000000).toFixed(2)} Cr`
-          : `₹${(totalStockValueINR / 100000).toFixed(2)} L`,
+        value:
+          totalStockValueINR >= 10000000
+            ? `₹${(totalStockValueINR / 10000000).toFixed(2)} Cr`
+            : totalStockValueINR > 0
+            ? `₹${(totalStockValueINR / 100000).toFixed(2)} L`
+            : '₹0.00',
         numericValue: totalStockValueINR,
         subtitle: 'FIFO wholesale valuation',
-        trendText: '+2.1% net book value',
-        trendPercent: 2.1,
+        trendText: totalStockValueINR > 0 ? 'Valuation at cost' : 'Zero valuation',
+        trendPercent: 0,
         isPositive: true,
-        sparkline: [78, 80, 81.5, 82.2, 83.1, 83.8, Number((totalStockValueINR / 10000000).toFixed(2))],
+        sparkline: makeSparkline(totalStockValueINR > 100000 ? Math.round(totalStockValueINR / 100000) : totalStockValueINR),
       },
       {
         id: 'today_sales',
         title: "Today's Sales",
         value: `₹${todaySales.toLocaleString('en-IN')}`,
         numericValue: todaySales,
-        subtitle: '18 dispatch invoices billed',
-        trendText: '+15.2% vs yesterday',
-        trendPercent: 15.2,
+        subtitle: `${todayInvoices.length} dispatch invoices billed`,
+        trendText: todaySales > 0 ? 'Billed today' : 'No sales billed today',
+        trendPercent: 0,
         isPositive: true,
-        sparkline: [280, 310, 340, 290, 380, 410, Math.round(todaySales / 1000)],
+        sparkline: makeSparkline(todaySales > 1000 ? Math.round(todaySales / 1000) : todaySales),
       },
       {
         id: 'month_sales',
-        title: period === 'year' ? "FY 2026-27 Sales" : "This Month's Sales",
-        value: monthSales >= 10000000 
-          ? `₹${(monthSales / 10000000).toFixed(2)} Cr`
-          : `₹${(monthSales / 100000).toFixed(2)} L`,
+        title: period === 'year' ? `FY ${yearStr} Sales` : "This Month's Sales",
+        value:
+          monthSales >= 10000000
+            ? `₹${(monthSales / 10000000).toFixed(2)} Cr`
+            : monthSales > 0
+            ? `₹${(monthSales / 100000).toFixed(2)} L`
+            : '₹0.00',
         numericValue: monthSales,
-        subtitle: `Target: ₹80.0 L (85.5% achieved)`,
-        trendText: '+8.4% YoY growth',
-        trendPercent: 8.4,
+        subtitle: `${monthInvoices.length} invoices recorded`,
+        trendText: monthSales > 0 ? 'Billed revenue' : 'No sales recorded',
+        trendPercent: 0,
         isPositive: true,
-        sparkline: [48, 52, 55, 60, 62, 65, Number((monthSales / 100000).toFixed(1))],
+        sparkline: makeSparkline(monthSales > 100000 ? Math.round(monthSales / 100000) : monthSales),
       },
       {
         id: 'outstanding_payments',
         title: 'Outstanding Due',
-        value: `₹${(totalOutstandingINR / 100000).toFixed(2)} L`,
+        value:
+          totalOutstandingINR >= 100000
+            ? `₹${(totalOutstandingINR / 100000).toFixed(2)} L`
+            : `₹${totalOutstandingINR.toLocaleString('en-IN')}`,
         numericValue: totalOutstandingINR,
-        subtitle: 'Overdue receivables > 30d',
-        trendText: '4 invoices overdue',
-        trendPercent: -3.5,
-        isPositive: false,
-        sparkline: [18, 19.5, 21, 20.2, 22.1, 21.8, Number((totalOutstandingINR / 100000).toFixed(1))],
+        subtitle: totalOutstandingINR > 0 ? 'Pending receivables' : 'Zero overdue payments',
+        trendText: totalOutstandingINR > 0 ? 'Receivables pending' : 'Zero overdue payments',
+        trendPercent: 0,
+        isPositive: totalOutstandingINR === 0,
+        sparkline: makeSparkline(totalOutstandingINR > 1000 ? Math.round(totalOutstandingINR / 1000) : totalOutstandingINR),
       },
       {
         id: 'low_stock_alerts',
@@ -154,64 +178,140 @@ export const dashboardService = {
         value: `${statusCounts.lowStock + statusCounts.outOfStock} Items`,
         numericValue: statusCounts.lowStock + statusCounts.outOfStock,
         subtitle: `${statusCounts.outOfStock} zero, ${statusCounts.lowStock} near threshold`,
-        trendText: 'Immediate PO suggested',
-        trendPercent: -5.0,
-        isPositive: false,
-        sparkline: [18, 16, 17, 15, 14, 15, statusCounts.lowStock + statusCounts.outOfStock],
+        trendText:
+          statusCounts.lowStock + statusCounts.outOfStock > 0
+            ? 'Immediate PO suggested'
+            : 'Inventory levels optimal',
+        trendPercent: 0,
+        isPositive: statusCounts.lowStock + statusCounts.outOfStock === 0,
+        sparkline: makeSparkline(statusCounts.lowStock + statusCounts.outOfStock),
       },
     ];
   },
 
   async getStockDonut(warehouseId: string): Promise<StockDonutSegment[]> {
-    await new Promise((res) => setTimeout(res, 40));
     const { statusCounts } = await inventoryService.getItems({ warehouseId });
-    const total = statusCounts.total || 1;
+    const total = statusCounts.total || 0;
 
     return [
       {
         name: 'In Stock',
         value: statusCounts.inStock,
-        percentage: Number(((statusCounts.inStock / total) * 100).toFixed(1)),
+        percentage: total > 0 ? Number(((statusCounts.inStock / total) * 100).toFixed(1)) : 0,
         color: '#10B981', // emerald-500
         statusKey: 'in_stock',
       },
       {
         name: 'Low Stock',
         value: statusCounts.lowStock,
-        percentage: Number(((statusCounts.lowStock / total) * 100).toFixed(1)),
+        percentage: total > 0 ? Number(((statusCounts.lowStock / total) * 100).toFixed(1)) : 0,
         color: '#F59E0B', // amber-500
         statusKey: 'low_stock',
       },
       {
         name: 'Out of Stock',
         value: statusCounts.outOfStock,
-        percentage: Number(((statusCounts.outOfStock / total) * 100).toFixed(1)),
+        percentage: total > 0 ? Number(((statusCounts.outOfStock / total) * 100).toFixed(1)) : 0,
         color: '#EF4444', // rose-500
         statusKey: 'out_of_stock',
       },
       {
         name: 'Dead Stock (>90d)',
         value: statusCounts.deadStock,
-        percentage: Number(((statusCounts.deadStock / total) * 100).toFixed(1)),
+        percentage: total > 0 ? Number(((statusCounts.deadStock / total) * 100).toFixed(1)) : 0,
         color: '#8B5CF6', // violet-500
         statusKey: 'dead_stock',
       },
     ];
   },
 
-  async getOrdersBreakdown(period: PeriodType): Promise<OrdersStatusSummary[]> {
-    await new Promise((res) => setTimeout(res, 40));
-    return [...MOCK_ORDERS_STATUS_BREAKDOWN];
+  async getOrdersBreakdown(_period: PeriodType): Promise<OrdersStatusSummary[]> {
+    const invoices = StorageService.get<Invoice[]>(STORAGE_KEYS.INVOICES, []);
+    const returns = StorageService.get<any[]>(STORAGE_KEYS.RETURNS, []);
+
+    const completed = invoices.filter((inv) => inv.status === 'paid');
+    const inProgress = invoices.filter((inv) => inv.status === 'sent' || inv.status === 'partially_paid');
+    const overdue = invoices.filter((inv) => inv.status === 'overdue');
+
+    const completedCount = completed.length;
+    const completedTotal = completed.reduce((sum, i) => sum + (i.grandTotal || 0), 0);
+
+    const inProgressCount = inProgress.length;
+    const inProgressTotal = inProgress.reduce((sum, i) => sum + (i.grandTotal || 0), 0);
+
+    const overdueCount = overdue.length;
+    const overdueTotal = overdue.reduce((sum, i) => sum + (i.balanceDue || 0), 0);
+
+    const returnedCount = returns.length;
+    const returnedTotal = returns.reduce((sum, r) => sum + (r.totalAmountINR || r.refundAmount || 0), 0);
+
+    const totalCount = completedCount + inProgressCount + overdueCount + returnedCount;
+
+    return [
+      {
+        status: 'completed',
+        label: 'Completed & Delivered',
+        count: completedCount,
+        totalAmountINR: completedTotal,
+        percentage: totalCount > 0 ? Number(((completedCount / totalCount) * 100).toFixed(1)) : 0,
+        colorClass: 'bg-emerald-500 text-emerald-500',
+        texturePattern: 'bg-[radial-gradient(#10B981_1px,transparent_1px)] [background-size:6px_6px]',
+      },
+      {
+        status: 'in_progress',
+        label: 'In Progress / Transit',
+        count: inProgressCount,
+        totalAmountINR: inProgressTotal,
+        percentage: totalCount > 0 ? Number(((inProgressCount / totalCount) * 100).toFixed(1)) : 0,
+        colorClass: 'bg-blue-500 text-blue-500',
+        texturePattern: 'bg-[radial-gradient(#3B82F6_1px,transparent_1px)] [background-size:6px_6px]',
+      },
+      {
+        status: 'overdue',
+        label: 'Payment Overdue',
+        count: overdueCount,
+        totalAmountINR: overdueTotal,
+        percentage: totalCount > 0 ? Number(((overdueCount / totalCount) * 100).toFixed(1)) : 0,
+        colorClass: 'bg-rose-500 text-rose-500',
+        texturePattern: 'bg-[radial-gradient(#EF4444_1px,transparent_1px)] [background-size:6px_6px]',
+      },
+      {
+        status: 'returned',
+        label: 'Returns / Credit Notes',
+        count: returnedCount,
+        totalAmountINR: returnedTotal,
+        percentage: totalCount > 0 ? Number(((returnedCount / totalCount) * 100).toFixed(1)) : 0,
+        colorClass: 'bg-amber-500 text-amber-500',
+        texturePattern: 'bg-[radial-gradient(#F59E0B_1px,transparent_1px)] [background-size:6px_6px]',
+      },
+    ];
   },
 
   async getOrderHistory(): Promise<OrderHistoryItem[]> {
-    await new Promise((res) => setTimeout(res, 40));
-    return [...MOCK_ORDER_HISTORY];
+    const invoices = StorageService.get<Invoice[]>(STORAGE_KEYS.INVOICES, []);
+    return invoices.map((inv) => ({
+      id: inv.id,
+      orderNumber: inv.invoiceNumber,
+      invoiceNumber: inv.invoiceNumber,
+      customerName: inv.customerName,
+      city: inv.placeOfSupplyStateName || 'HQ',
+      state: inv.placeOfSupplyStateName || 'HQ',
+      date: inv.date,
+      itemsCount: inv.items ? inv.items.reduce((s, it) => s + (it.quantity || 0), 0) : 0,
+      primaryItemName: inv.items && inv.items[0] ? inv.items[0].name : 'Standard Item',
+      amountINR: inv.grandTotal || 0,
+      status:
+        inv.status === 'paid'
+          ? 'completed'
+          : inv.status === 'overdue'
+          ? 'overdue'
+          : 'in_progress',
+    }));
   },
 
   async getActiveShipments(): Promise<ActiveShipment[]> {
-    await new Promise((res) => setTimeout(res, 40));
-    return [...MOCK_ACTIVE_SHIPMENTS];
+    // Return empty array when no active fleet shipments exist
+    return [];
   },
 
   getUserLayout(userId: string): UserDashboardLayout {
@@ -239,4 +339,5 @@ export const dashboardService = {
     } catch {}
   },
 };
+
 

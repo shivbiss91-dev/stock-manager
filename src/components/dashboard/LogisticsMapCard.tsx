@@ -21,11 +21,13 @@ interface LogisticsMapCardProps {
 
 export const LogisticsMapCard: React.FC<LogisticsMapCardProps> = ({ shipments }) => {
   const navigate = useNavigate();
-  const activeShipments = shipments && shipments.length > 0 ? shipments : MOCK_ACTIVE_SHIPMENTS;
+  const activeShipments = shipments || [];
   const [selectedShipmentId, setSelectedShipmentId] = useState<string | null>(null);
 
   const selectedShipment =
-    activeShipments.find((s) => s.id === selectedShipmentId) || activeShipments[0];
+    activeShipments.find((s) => s.id === selectedShipmentId) || activeShipments[0] || null;
+
+  const delayedCount = activeShipments.filter((s) => s.status === 'delayed').length;
 
   return (
     <Card
@@ -40,15 +42,20 @@ export const LogisticsMapCard: React.FC<LogisticsMapCardProps> = ({ shipments })
             <h3 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-[#F2F4F8] tracking-tight">
               Logistics & Fleet Tracking
             </h3>
-            {/* Blue "delay" pill with dark "+2d" pill */}
-            <div className="flex items-center gap-1">
-              <span className="px-2.5 py-0.5 rounded-full bg-[#3B5BFF] text-white text-[11px] font-bold shadow-sm">
-                Delay
+            {delayedCount > 0 ? (
+              <div className="flex items-center gap-1">
+                <span className="px-2.5 py-0.5 rounded-full bg-[#3B5BFF] text-white text-[11px] font-bold shadow-sm">
+                  Delay
+                </span>
+                <span className="px-2 py-0.5 rounded-full bg-[#0B0D14] border border-white/20 text-white text-[11px] font-mono font-bold">
+                  +{delayedCount}
+                </span>
+              </div>
+            ) : (
+              <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 text-[11px] font-semibold">
+                Fleet Idle / On Schedule
               </span>
-              <span className="px-2 py-0.5 rounded-full bg-[#0B0D14] border border-white/20 text-white text-[11px] font-mono font-bold">
-                +2d
-              </span>
-            </div>
+            )}
           </div>
           <p className="text-xs text-slate-400 dark:text-[#9AA0AE]">
             Active inter-state logistics corridors across Indian hubs
@@ -56,40 +63,22 @@ export const LogisticsMapCard: React.FC<LogisticsMapCardProps> = ({ shipments })
         </div>
 
         <div className="flex items-center gap-2">
-          {/* "Delivery delayed" strip with thumbnails and "+N" chip */}
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-[#1A1D26] border border-slate-200 dark:border-white/[0.08] text-xs">
-            <span className="font-bold text-rose-500 dark:text-rose-400 flex items-center gap-1.5">
-              <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
-              <span className="hidden md:inline">Delivery delayed</span>
-            </span>
-
-            {/* Thumbnails */}
-            <div className="flex items-center -space-x-2">
-              <div
-                className="w-6 h-6 rounded-full bg-brand-orange text-white text-[10px] font-bold flex items-center justify-center ring-2 ring-white dark:ring-[#1A1D26]"
-                title="Shipment SHP-IND-2026-001"
-              >
-                P1
-              </div>
-              <div
-                className="w-6 h-6 rounded-full bg-[#3B5BFF] text-white text-[10px] font-bold flex items-center justify-center ring-2 ring-white dark:ring-[#1A1D26]"
-                title="Shipment SHP-IND-2026-002"
-              >
-                T2
-              </div>
-              <div
-                className="w-6 h-6 rounded-full bg-emerald-600 text-white text-[10px] font-bold flex items-center justify-center ring-2 ring-white dark:ring-[#1A1D26]"
-                title="Shipment SHP-IND-2026-003"
-              >
-                M3
-              </div>
+          {delayedCount > 0 ? (
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-[#1A1D26] border border-slate-200 dark:border-white/[0.08] text-xs">
+              <span className="font-bold text-rose-500 dark:text-rose-400 flex items-center gap-1.5">
+                <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
+                <span className="hidden md:inline">Delivery delayed</span>
+              </span>
+              <span className="px-1.5 py-0.2 rounded-full bg-slate-200 dark:bg-white/10 text-slate-700 dark:text-[#F2F4F8] text-[10px] font-extrabold">
+                {delayedCount}
+              </span>
             </div>
-
-            {/* +N Chip */}
-            <span className="px-1.5 py-0.2 rounded-full bg-slate-200 dark:bg-white/10 text-slate-700 dark:text-[#F2F4F8] text-[10px] font-extrabold">
-              +3
-            </span>
-          </div>
+          ) : (
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-[#1A1D26] border border-slate-200 dark:border-white/[0.08] text-xs text-slate-500 dark:text-[#9AA0AE]">
+              <Truck className="w-3.5 h-3.5 text-slate-400" />
+              <span>{activeShipments.length} Active Shipments</span>
+            </div>
+          )}
 
           {/* Expand Icon Button */}
           <button
@@ -239,12 +228,14 @@ export const LogisticsMapCard: React.FC<LogisticsMapCardProps> = ({ shipments })
           </svg>
 
           {/* Map bottom delay alert tag */}
-          <div className="absolute bottom-3 left-3 right-3 flex flex-wrap gap-2 pointer-events-none">
-            <div className="px-3 py-1 rounded-xl bg-black/80 border border-rose-500/50 text-rose-300 text-[11px] font-bold flex items-center gap-1.5 backdrop-blur-md">
-              <AlertTriangle className="w-3.5 h-3.5 text-rose-400" />
-              <span>NH-48 Corridor Alert: +2d Monsoon Roadwork</span>
+          {delayedCount > 0 && (
+            <div className="absolute bottom-3 left-3 right-3 flex flex-wrap gap-2 pointer-events-none">
+              <div className="px-3 py-1 rounded-xl bg-black/80 border border-rose-500/50 text-rose-300 text-[11px] font-bold flex items-center gap-1.5 backdrop-blur-md">
+                <AlertTriangle className="w-3.5 h-3.5 text-rose-400" />
+                <span>Logistics Notice: {delayedCount} shipment(s) delayed</span>
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Right: Selected Active Consignment Card (lg:col-span-5) */}
@@ -325,32 +316,42 @@ export const LogisticsMapCard: React.FC<LogisticsMapCardProps> = ({ shipments })
               </div>
             </div>
           ) : (
-            <div className="p-8 text-center text-slate-400 bg-slate-50 dark:bg-[#12151D] rounded-2xl border border-slate-200 dark:border-white/[0.08]">
-              No active shipments in transit
+            <div className="p-8 text-center bg-slate-50 dark:bg-[#12151D] rounded-2xl border border-slate-200 dark:border-white/[0.08] flex flex-col items-center justify-center">
+              <Truck className="w-10 h-10 text-slate-300 dark:text-slate-600 mb-2" strokeWidth={1.5} />
+              <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">Fleet Idle</p>
+              <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">No active stock transfers currently in transit.</p>
+              <button
+                onClick={() => navigate('/transfers')}
+                className="mt-4 px-3.5 py-1.5 text-xs font-medium rounded-xl bg-brand-orange text-white hover:bg-orange-600 transition-colors"
+              >
+                + New Stock Transfer
+              </button>
             </div>
           )}
 
           {/* Quick Selection Hub Pills */}
-          <div className="space-y-1">
-            <span className="text-[11px] font-bold text-slate-400 dark:text-[#9AA0AE] uppercase tracking-wider block">
-              Active Fleet Corridors
-            </span>
-            <div className="flex flex-wrap gap-1.5">
-              {activeShipments.map((s) => (
-                <button
-                  key={s.id}
-                  onClick={() => setSelectedShipmentId(s.id)}
-                  className={`px-3 py-1 rounded-xl text-xs font-semibold border transition-all ${
-                    selectedShipment?.id === s.id
-                      ? 'bg-brand-orange text-white border-brand-orange shadow-sm'
-                      : 'bg-white dark:bg-[#1A1D26] border-slate-200 dark:border-white/[0.08] text-slate-600 dark:text-[#9AA0AE] hover:border-brand-orange/40'
-                  }`}
-                >
-                  {s.originHub.code} → {s.destinationHub.code}
-                </button>
-              ))}
+          {activeShipments.length > 0 && (
+            <div className="space-y-1">
+              <span className="text-[11px] font-bold text-slate-400 dark:text-[#9AA0AE] uppercase tracking-wider block">
+                Active Fleet Corridors
+              </span>
+              <div className="flex flex-wrap gap-1.5">
+                {activeShipments.map((s) => (
+                  <button
+                    key={s.id}
+                    onClick={() => setSelectedShipmentId(s.id)}
+                    className={`px-3 py-1 rounded-xl text-xs font-semibold border transition-all ${
+                      selectedShipment?.id === s.id
+                        ? 'bg-brand-orange text-white border-brand-orange shadow-sm'
+                        : 'bg-white dark:bg-[#1A1D26] border-slate-200 dark:border-white/[0.08] text-slate-600 dark:text-[#9AA0AE] hover:border-brand-orange/40'
+                    }`}
+                  >
+                    {s.originHub.code} → {s.destinationHub.code}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
     </Card>

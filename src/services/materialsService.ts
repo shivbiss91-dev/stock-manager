@@ -16,14 +16,14 @@ let categoriesState: MaterialCategoryInfo[] = [...MATERIAL_CATEGORIES];
 
 export const materialsService = {
   async getCategories(warehouseId?: string): Promise<MaterialTileSummary[]> {
-    await new Promise((res) => setTimeout(res, 40));
+    await new Promise((res) => setTimeout(res, 30));
 
     const { items } = await inventoryService.getItems({
       warehouseId,
       pageSize: 5000,
     });
 
-    return categoriesState.map((cat, idx) => {
+    return categoriesState.map((cat) => {
       const catItems = items.filter((i) => i.materialCategory === cat.id);
       const itemCount = catItems.length;
       const totalPieces = catItems.reduce((acc, curr) => acc + curr.currentStock, 0);
@@ -35,9 +35,14 @@ export const materialsService = {
         (i) => i.stockStatus === 'low_stock' || i.stockStatus === 'out_of_stock'
       ).length;
 
-      // Realistic mini sales sparkline data per category
-      const baseTrend = [28, 32, 35, 33, 40, 42, 45];
-      const scaledTrend = baseTrend.map((v) => Math.round(v * (1 + (idx % 3) * 0.2)));
+      // Realistic mini sales sparkline data strictly based on real items
+      let miniSalesGraph: number[] = [];
+      let growthPercent = 0;
+
+      if (itemCount > 0 && totalPieces > 0) {
+        miniSalesGraph = [totalPieces, totalPieces, totalPieces, totalPieces, totalPieces];
+        growthPercent = 0;
+      }
 
       return {
         ...cat,
@@ -45,8 +50,8 @@ export const materialsService = {
         totalPieces,
         stockValueINR,
         lowStockCount,
-        miniSalesGraph: scaledTrend,
-        growthPercent: Number((6.5 + (idx % 4) * 2.1).toFixed(1)),
+        miniSalesGraph,
+        growthPercent,
       };
     });
   },
@@ -58,7 +63,7 @@ export const materialsService = {
   },
 
   async updateCategoryName(id: MaterialCategory, newName: string): Promise<MaterialCategoryInfo> {
-    await new Promise((res) => setTimeout(res, 50));
+    await new Promise((res) => setTimeout(res, 30));
     const idx = categoriesState.findIndex((c) => c.id === id);
     if (idx === -1) throw new Error('Category not found');
 

@@ -10,8 +10,10 @@ import { StockStatus } from '../../types/common';
 import { formatINR } from '../../utils/formatINR';
 import { formatPackagingBreakdown } from '../../utils/unitConversions';
 import { MATERIAL_CATEGORIES } from '../../data/materialCategories';
-import { MOCK_SUPPLIERS } from '../../data/suppliers';
-import { MOCK_WAREHOUSES } from '../../data/warehouses';
+import { supplierService } from '../../services/supplierService';
+import { warehouseService } from '../../services/warehouseService';
+import { Supplier } from '../../types/sales';
+import { Warehouse } from '../../types/warehouse';
 import {
   Search,
   Plus,
@@ -55,6 +57,13 @@ export const ProductListTableCard: React.FC<ProductListTableCardProps> = ({
   const [selectedCategory, setSelectedCategory] = useState<MaterialCategory | 'all'>('all');
   const [selectedSupplier, setSelectedSupplier] = useState<string>('all');
   const [selectedStorageWh, setSelectedStorageWh] = useState<string>('all');
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
+
+  useEffect(() => {
+    supplierService.getSuppliers().then(setSuppliers);
+    warehouseService.getWarehouses().then(setWarehouses);
+  }, []);
 
   // Selection & Row Click Fade
   const [selectedRowIds, setSelectedRowIds] = useState<Record<string, boolean>>({});
@@ -346,7 +355,7 @@ export const ProductListTableCard: React.FC<ProductListTableCardProps> = ({
             className="w-full text-xs rounded-xl border border-slate-200 dark:border-white/[0.08] bg-slate-50 dark:bg-[#1A1D26] px-3.5 py-2.5 text-slate-800 dark:text-[#F2F4F8] focus:outline-none focus:ring-2 focus:ring-brand-orange cursor-pointer"
           >
             <option value="all" className="bg-white dark:bg-[#12151D]">All Suppliers</option>
-            {MOCK_SUPPLIERS.slice(0, 15).map((s) => (
+            {suppliers.map((s) => (
               <option key={s.id} value={s.id} className="bg-white dark:bg-[#12151D]">
                 {s.name}
               </option>
@@ -362,7 +371,7 @@ export const ProductListTableCard: React.FC<ProductListTableCardProps> = ({
             className="w-full text-xs rounded-xl border border-slate-200 dark:border-white/[0.08] bg-slate-50 dark:bg-[#1A1D26] px-3.5 py-2.5 text-slate-800 dark:text-[#F2F4F8] focus:outline-none focus:ring-2 focus:ring-brand-orange cursor-pointer"
           >
             <option value="all" className="bg-white dark:bg-[#12151D]">All Storage Hubs</option>
-            {MOCK_WAREHOUSES.filter((w) => w.id !== 'all').map((w) => (
+            {warehouses.filter((w) => w.id !== 'all').map((w) => (
               <option key={w.id} value={w.id} className="bg-white dark:bg-[#12151D]">
                 {w.code} - {w.city}
               </option>
@@ -460,6 +469,29 @@ export const ProductListTableCard: React.FC<ProductListTableCardProps> = ({
                   </td>
                 </tr>
               ))
+            ) : totalCount === 0 ? (
+              <tr>
+                <td colSpan={10} className="px-4 py-16 text-center">
+                  <div className="max-w-md mx-auto flex flex-col items-center justify-center">
+                    <div className="w-14 h-14 rounded-2xl bg-brand-orange/10 text-brand-orange flex items-center justify-center mb-3">
+                      <Box className="w-7 h-7" strokeWidth={1.5} />
+                    </div>
+                    <h4 className="text-base font-bold text-slate-800 dark:text-[#F2F4F8]">
+                      No products added yet.
+                    </h4>
+                    <p className="text-xs text-slate-400 dark:text-[#9AA0AE] mt-1 mb-4">
+                      Start building your inventory by adding your first product.
+                    </p>
+                    <Button
+                      variant="primary"
+                      onClick={() => setIsAddModalOpen(true)}
+                      leftIcon={<Plus className="w-4 h-4" strokeWidth={2} />}
+                    >
+                      Add New Item
+                    </Button>
+                  </div>
+                </td>
+              </tr>
             ) : items.length === 0 ? (
               <tr>
                 <td colSpan={10} className="px-4 py-10 text-center text-slate-400">

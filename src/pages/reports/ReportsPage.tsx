@@ -17,6 +17,8 @@ import { inventoryService } from '../../services/inventoryService';
 import { invoiceService } from '../../services/invoiceService';
 import { purchaseService } from '../../services/purchaseService';
 import { ComputedInventoryItem, MaterialCategory } from '../../types/inventory';
+import { Invoice } from '../../types/sales';
+import { GoodsReceivedNote } from '../../types/warehouse';
 import { formatINR } from '../../utils/formatINR';
 import { useNotificationStore } from '../../store/notificationStore';
 
@@ -28,14 +30,22 @@ export const ReportsPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<ReportTab>('valuation');
   const [valuationMethod, setValuationMethod] = useState<'weighted' | 'fifo'>('weighted');
   const [items, setItems] = useState<ComputedInventoryItem[]>([]);
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [grns, setGrns] = useState<GoodsReceivedNote[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     let isMounted = true;
     setIsLoading(true);
-    inventoryService.getItems({ pageSize: 500 }).then((res) => {
+    Promise.all([
+      inventoryService.getItems({ pageSize: 500 }),
+      invoiceService.getInvoices(),
+      purchaseService.getGRNs(),
+    ]).then(([res, invs, grnList]) => {
       if (isMounted) {
         setItems(res.items);
+        setInvoices(invs);
+        setGrns(grnList);
         setIsLoading(false);
       }
     });
@@ -234,75 +244,85 @@ export const ReportsPage: React.FC = () => {
       )}
 
       {/* TAB 2: GST Returns Summary (GSTR-1 & 3B) */}
-      {activeTab === 'gst' && (
-        <div className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* GSTR-1 Outward Supplies */}
-            <div className="template-card border border-slate-200 dark:border-white/[0.06] rounded-[20px] p-5 shadow-soft space-y-4">
-              <div className="flex items-center justify-between border-b border-slate-100 dark:border-white/[0.06] pb-3">
-                <h3 className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2">
-                  <ShieldCheck className="w-4 h-4 text-accent-orange" />
-                  <span>GSTR-1: Outward Supplies (Sales)</span>
-                </h3>
-                <span className="text-[11px] font-mono font-bold text-slate-500">October 2026</span>
+      {activeTab === 'gst' && (() => {
+        const b2bTurnover = invoices.reduce((sum, inv) => sum + (inv.subtotalTaxable || 0), 0);
+        const cgstTotal = invoices.reduce((sum, inv) => sum + (inv.cgstTotal || 0), 0);
+        const sgstTotal = invoices.reduce((sum, inv) => sum + (inv.sgstTotal || 0), 0);
+        const igstTotal = invoices.reduce((sum, inv) => sum + (inv.igstTotal || 0), 0);
+        const grossOutputTax = cgstTotal + sgstTotal + igstTotal;
+        const eligibleITC = grns.reduce((sum, grn) => sum + (grn.items ? grn.items.reduce((s, it) => s + (it.rejectedQuantity || 0), 0) : 0), 0);
+        const netGSTPayable = Math.max(0, grossOutputTax - eligibleITC);
+
+        return (
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* GSTR-1 Outward Supplies */}
+              <div className="template-card border border-slate-200 dark:border-white/[0.06] rounded-[20px] p-5 shadow-soft space-y-4">
+                <div className="flex items-center justify-between border-b border-slate-100 dark:border-white/[0.06] pb-3">
+                  <h3 className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2">
+                    <ShieldCheck className="w-4 h-4 text-accent-orange" />
+                    <span>GSTR-1: Outward Supplies (Sales)</span>
+                  </h3>
+                  <span className="text-[11px] font-mono font-bold text-slate-500">Current Period</span>
+                </div>
+
+                <div className="space-y-2.5 text-xs">
+                  <div className="flex justify-between">
+                    <span className="text-slate-500">Total B2B Taxable Turnover:</span>
+                    <span className="font-bold text-slate-900 dark:text-white">{formatINR(b2bTurnover)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-500">Central Tax (CGST):</span>
+                    <span className="font-semibold text-slate-800 dark:text-slate-200">{formatINR(cgstTotal)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-500">State Tax (SGST):</span>
+                    <span className="font-semibold text-slate-800 dark:text-slate-200">{formatINR(sgstTotal)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-500">Integrated Tax (IGST):</span>
+                    <span className="font-semibold text-slate-800 dark:text-slate-200">{formatINR(igstTotal)}</span>
+                  </div>
+                  <div className="pt-2 border-t border-slate-200 dark:border-white/[0.06] flex justify-between font-bold text-sm">
+                    <span>Gross Output GST Liability:</span>
+                    <span className="text-rose-500">{formatINR(grossOutputTax)}</span>
+                  </div>
+                </div>
               </div>
 
-              <div className="space-y-2.5 text-xs">
-                <div className="flex justify-between">
-                  <span className="text-slate-500">Total B2B Taxable Turnover:</span>
-                  <span className="font-bold text-slate-900 dark:text-white">₹1,48,25,000.00</span>
+              {/* GSTR-3B ITC Net Position */}
+              <div className="template-card border border-slate-200 dark:border-white/[0.06] rounded-[20px] p-5 shadow-soft space-y-4">
+                <div className="flex items-center justify-between border-b border-slate-100 dark:border-white/[0.06] pb-3">
+                  <h3 className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                    <span>GSTR-3B: Net Tax Settlement</span>
+                  </h3>
+                  <span className="text-[11px] font-mono font-bold text-slate-500">Current Period</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-500">Central Tax (CGST 9%):</span>
-                  <span className="font-semibold text-slate-800 dark:text-slate-200">₹8,89,500.00</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-500">State Tax (SGST 9%):</span>
-                  <span className="font-semibold text-slate-800 dark:text-slate-200">₹8,89,500.00</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-500">Integrated Tax (IGST 18%):</span>
-                  <span className="font-semibold text-slate-800 dark:text-slate-200">₹8,89,000.00</span>
-                </div>
-                <div className="pt-2 border-t border-slate-200 dark:border-white/[0.06] flex justify-between font-bold text-sm">
-                  <span>Gross Output GST Liability:</span>
-                  <span className="text-rose-500">₹26,68,000.00</span>
-                </div>
-              </div>
-            </div>
 
-            {/* GSTR-3B ITC Net Position */}
-            <div className="template-card border border-slate-200 dark:border-white/[0.06] rounded-[20px] p-5 shadow-soft space-y-4">
-              <div className="flex items-center justify-between border-b border-slate-100 dark:border-white/[0.06] pb-3">
-                <h3 className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                  <span>GSTR-3B: Net Tax Settlement</span>
-                </h3>
-                <span className="text-[11px] font-mono font-bold text-slate-500">October 2026</span>
-              </div>
-
-              <div className="space-y-2.5 text-xs">
-                <div className="flex justify-between">
-                  <span className="text-slate-500">Gross Output Tax:</span>
-                  <span className="font-bold text-rose-500">₹26,68,000.00</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-500">Eligible ITC (Purchases / GRN):</span>
-                  <span className="font-bold text-emerald-400">-₹21,35,000.00</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-500">Electronic Cash Ledger Balance:</span>
-                  <span className="font-semibold text-slate-800 dark:text-slate-200">₹1,50,000.00</span>
-                </div>
-                <div className="pt-2 border-t border-slate-200 dark:border-white/[0.06] flex justify-between font-bold text-sm">
-                  <span>Net GST Payable via Challan:</span>
-                  <span className="text-accent-orange">₹3,83,000.00</span>
+                <div className="space-y-2.5 text-xs">
+                  <div className="flex justify-between">
+                    <span className="text-slate-500">Gross Output Tax:</span>
+                    <span className="font-bold text-rose-500">{formatINR(grossOutputTax)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-500">Eligible ITC (Purchases / GRN):</span>
+                    <span className="font-bold text-emerald-400">-{formatINR(eligibleITC)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-500">Electronic Cash Ledger Balance:</span>
+                    <span className="font-semibold text-slate-800 dark:text-slate-200">₹0.00</span>
+                  </div>
+                  <div className="pt-2 border-t border-slate-200 dark:border-white/[0.06] flex justify-between font-bold text-sm">
+                    <span>Net GST Payable via Challan:</span>
+                    <span className="text-accent-orange">{formatINR(netGSTPayable)}</span>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* TAB 3: Low Stock & Reorder Trigger */}
       {activeTab === 'reorder' && (
@@ -336,31 +356,41 @@ export const ReportsPage: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-white/[0.04] text-slate-700 dark:text-slate-300">
-                  {lowStockItems.slice(0, 15).map((item) => {
-                    const suggestedPO = Math.max(50, item.reorderLevel * 2 - item.currentStock);
-                    return (
-                      <tr key={item.id} className="hover:bg-slate-50/60 dark:hover:bg-white/[0.02] transition">
-                        <td className="py-3 px-4 font-semibold text-slate-900 dark:text-white">
-                          {item.name}
-                        </td>
-                        <td className="py-3 px-3 font-mono text-slate-500">
-                          {item.sku} ({item.warehouseName.split(' ')[0]})
-                        </td>
-                        <td className="py-3 px-3 text-right font-bold text-rose-500">
-                          {item.currentStock} {item.unit}
-                        </td>
-                        <td className="py-3 px-3 text-right text-slate-500">
-                          {item.reorderLevel} {item.unit}
-                        </td>
-                        <td className="py-3 px-3 text-right font-bold text-accent-blue">
-                          {suggestedPO} {item.unit}
-                        </td>
-                        <td className="py-3 px-3 text-right font-semibold text-slate-900 dark:text-white">
-                          {formatINR(suggestedPO * item.costPrice)}
-                        </td>
-                      </tr>
-                    );
-                  })}
+                  {lowStockItems.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="py-10 text-center text-slate-400">
+                        <CheckCircle2 className="w-8 h-8 mx-auto text-emerald-400 mb-2" />
+                        <p className="font-semibold text-slate-700 dark:text-slate-300">All Inventory Levels Optimal</p>
+                        <p className="text-xs">No items currently below minimum safety reorder thresholds.</p>
+                      </td>
+                    </tr>
+                  ) : (
+                    lowStockItems.slice(0, 15).map((item) => {
+                      const suggestedPO = Math.max(50, item.reorderLevel * 2 - item.currentStock);
+                      return (
+                        <tr key={item.id} className="hover:bg-slate-50/60 dark:hover:bg-white/[0.02] transition">
+                          <td className="py-3 px-4 font-semibold text-slate-900 dark:text-white">
+                            {item.name}
+                          </td>
+                          <td className="py-3 px-3 font-mono text-slate-500">
+                            {item.sku} ({item.warehouseName.split(' ')[0]})
+                          </td>
+                          <td className="py-3 px-3 text-right font-bold text-rose-500">
+                            {item.currentStock} {item.unit}
+                          </td>
+                          <td className="py-3 px-3 text-right text-slate-500">
+                            {item.reorderLevel} {item.unit}
+                          </td>
+                          <td className="py-3 px-3 text-right font-bold text-accent-blue">
+                            {suggestedPO} {item.unit}
+                          </td>
+                          <td className="py-3 px-3 text-right font-semibold text-slate-900 dark:text-white">
+                            {formatINR(suggestedPO * item.costPrice)}
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
                 </tbody>
               </table>
             </div>
@@ -379,20 +409,26 @@ export const ReportsPage: React.FC = () => {
             </h3>
 
             <div className="space-y-2 text-xs">
-              {highVelocityItems.slice(0, 6).map((item) => (
-                <div key={item.id} className="p-3 rounded-xl bg-slate-50/50 dark:bg-white/[0.02] border border-slate-100 dark:border-white/[0.06] flex justify-between items-center">
-                  <div>
-                    <p className="font-semibold text-slate-900 dark:text-white">{item.name}</p>
-                    <p className="text-[10px] text-slate-400 font-mono">SKU: {item.sku}</p>
-                  </div>
-                  <div className="text-right">
-                    <span className="font-bold text-emerald-400 block">
-                      {item.sales30Days} sold / 30d
-                    </span>
-                    <span className="text-[10px] text-slate-400">{formatINR(item.sellingPrice)}</span>
-                  </div>
+              {highVelocityItems.length === 0 ? (
+                <div className="p-4 rounded-xl bg-slate-50/50 dark:bg-white/[0.02] border border-slate-100 dark:border-white/[0.06] text-center text-slate-400">
+                  No high velocity sales items recorded in the last 30 days.
                 </div>
-              ))}
+              ) : (
+                highVelocityItems.slice(0, 6).map((item) => (
+                  <div key={item.id} className="p-3 rounded-xl bg-slate-50/50 dark:bg-white/[0.02] border border-slate-100 dark:border-white/[0.06] flex justify-between items-center">
+                    <div>
+                      <p className="font-semibold text-slate-900 dark:text-white">{item.name}</p>
+                      <p className="text-[10px] text-slate-400 font-mono">SKU: {item.sku}</p>
+                    </div>
+                    <div className="text-right">
+                      <span className="font-bold text-emerald-400 block">
+                        {item.sales30Days} sold / 30d
+                      </span>
+                      <span className="text-[10px] text-slate-400">{formatINR(item.sellingPrice)}</span>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
 
@@ -404,22 +440,28 @@ export const ReportsPage: React.FC = () => {
             </h3>
 
             <div className="space-y-2 text-xs">
-              {deadStockItems.slice(0, 6).map((item) => (
-                <div key={item.id} className="p-3 rounded-xl bg-slate-50/50 dark:bg-white/[0.02] border border-slate-100 dark:border-white/[0.06] flex justify-between items-center">
-                  <div>
-                    <p className="font-semibold text-slate-900 dark:text-white">{item.name}</p>
-                    <p className="text-[10px] text-slate-400 font-mono">Rack: {item.rackLocation}</p>
-                  </div>
-                  <div className="text-right">
-                    <span className="font-bold text-accent-orange block">
-                      {item.currentStock} {item.unit} trapped
-                    </span>
-                    <span className="text-[10px] text-slate-400">
-                      Asset Value: {formatINR(item.currentStock * item.costPrice)}
-                    </span>
-                  </div>
+              {deadStockItems.length === 0 ? (
+                <div className="p-4 rounded-xl bg-slate-50/50 dark:bg-white/[0.02] border border-slate-100 dark:border-white/[0.06] text-center text-slate-400">
+                  No stagnant or dead stock items detected.
                 </div>
-              ))}
+              ) : (
+                deadStockItems.slice(0, 6).map((item) => (
+                  <div key={item.id} className="p-3 rounded-xl bg-slate-50/50 dark:bg-white/[0.02] border border-slate-100 dark:border-white/[0.06] flex justify-between items-center">
+                    <div>
+                      <p className="font-semibold text-slate-900 dark:text-white">{item.name}</p>
+                      <p className="text-[10px] text-slate-400 font-mono">Rack: {item.rackLocation}</p>
+                    </div>
+                    <div className="text-right">
+                      <span className="font-bold text-accent-orange block">
+                        {item.currentStock} {item.unit} trapped
+                      </span>
+                      <span className="text-[10px] text-slate-400">
+                        Asset Value: {formatINR(item.currentStock * item.costPrice)}
+                      </span>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </div>

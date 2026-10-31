@@ -1,10 +1,14 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeAll } from 'vitest';
 import { itemAnalyticsService } from '../services/itemAnalyticsService';
 import { stockMovementService } from '../services/stockMovementService';
 import { inventoryService } from '../services/inventoryService';
 import { approvalsService } from '../services/approvalsService';
+import { MASTER_INVENTORY } from './fixtures/inventorySeed';
 
 describe('Phase 4: Item Detail, Sales Analytics & Movement Audit', () => {
+  beforeAll(() => {
+    inventoryService._seedInventoryForTesting(MASTER_INVENTORY);
+  });
   const testItemId = 'item-wd-0001';
   const testSellingPrice = 2450;
 

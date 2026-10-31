@@ -1,4 +1,3 @@
-import { MASTER_INVENTORY } from '../data/inventorySeed';
 import {
   InventoryItem,
   ComputedInventoryItem,
@@ -12,6 +11,7 @@ import {
   convertToBaseQuantity,
   DEFAULT_PACKAGING_CONVERSIONS,
 } from '../utils/unitConversions';
+import { StorageService, STORAGE_KEYS } from './storageService';
 
 export interface StockAdjustmentInput {
   mode?: 'add' | 'deduct' | 'direct';
@@ -26,8 +26,13 @@ export interface StockAdjustmentInput {
   referenceNumber?: string;
 }
 
-// Local mutable repository for items
-let itemsDatabase: InventoryItem[] = [...MASTER_INVENTORY];
+function getStoredItems(): InventoryItem[] {
+  return StorageService.get<InventoryItem[]>(STORAGE_KEYS.ITEMS, []);
+}
+
+function saveStoredItems(items: InventoryItem[]): void {
+  StorageService.set(STORAGE_KEYS.ITEMS, items);
+}
 
 export interface InventoryFilterOptions {
   warehouseId?: string;
@@ -103,7 +108,7 @@ export function toComputedItem(item: InventoryItem): ComputedInventoryItem {
 
 export const inventoryService = {
   async getItems(options: InventoryFilterOptions = {}): Promise<InventoryListResult> {
-    await new Promise((res) => setTimeout(res, 60)); // Fast async response
+    await new Promise((res) => setTimeout(res, 30));
 
     const {
       warehouseId,
@@ -121,6 +126,7 @@ export const inventoryService = {
       sortOrder = 'asc',
     } = options;
 
+    const itemsDatabase = getStoredItems();
     let computed = itemsDatabase.map(toComputedItem);
 
     // Filter by warehouse
@@ -165,12 +171,12 @@ export const inventoryService = {
       computed = computed.filter((item) => item.sellingPrice <= maxPrice);
     }
 
-    // Filter by velocity
+    // Filter by sales velocity
     if (salesVelocity && salesVelocity !== 'all') {
       computed = computed.filter((item) => item.salesVelocity === salesVelocity);
     }
 
-    // Search query filter (search by name, SKU, HSN, description)
+    // Full-text search across Name, SKU, HSN, Supplier, Subtype
     if (search && search.trim()) {
       const q = search.trim().toLowerCase();
       computed = computed.filter(
@@ -178,29 +184,30 @@ export const inventoryService = {
           item.name.toLowerCase().includes(q) ||
           item.sku.toLowerCase().includes(q) ||
           item.hsnCode.includes(q) ||
-          item.rackLocation.toLowerCase().includes(q)
+          item.supplierName.toLowerCase().includes(q) ||
+          item.materialSubtype.toLowerCase().includes(q)
       );
     }
 
     // Sorting
     computed.sort((a, b) => {
-      let valA: string | number = a[sortBy] ?? '';
-      let valB: string | number = b[sortBy] ?? '';
-      if (typeof valA === 'string') valA = valA.toLowerCase();
-      if (typeof valB === 'string') valB = valB.toLowerCase();
+      let cmp = 0;
+      if (sortBy === 'name') cmp = a.name.localeCompare(b.name);
+      else if (sortBy === 'sku') cmp = a.sku.localeCompare(b.sku);
+      else if (sortBy === 'currentStock') cmp = a.currentStock - b.currentStock;
+      else if (sortBy === 'sellingPrice') cmp = a.sellingPrice - b.sellingPrice;
+      else if (sortBy === 'sales30Days') cmp = a.sales30Days - b.sales30Days;
 
-      if (valA < valB) return sortOrder === 'asc' ? -1 : 1;
-      if (valA > valB) return sortOrder === 'asc' ? 1 : -1;
-      return 0;
+      return sortOrder === 'desc' ? -cmp : cmp;
     });
 
     const totalCount = computed.length;
-    const totalPages = Math.ceil(totalCount / pageSize);
-    const startIdx = (page - 1) * pageSize;
-    const paginatedItems = computed.slice(startIdx, startIdx + pageSize);
+    const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+    const start = (page - 1) * pageSize;
+    const paginated = computed.slice(start, start + pageSize);
 
     return {
-      items: paginatedItems,
+      items: paginated,
       totalCount,
       page,
       pageSize,
@@ -210,13 +217,15 @@ export const inventoryService = {
   },
 
   async getItemById(id: string): Promise<ComputedInventoryItem | null> {
-    await new Promise((res) => setTimeout(res, 40));
+    await new Promise((res) => setTimeout(res, 20));
+    const itemsDatabase = getStoredItems();
     const item = itemsDatabase.find((i) => i.id === id);
     return item ? toComputedItem(item) : null;
   },
 
   async getItemBySku(sku: string): Promise<ComputedInventoryItem | null> {
-    await new Promise((res) => setTimeout(res, 40));
+    await new Promise((res) => setTimeout(res, 20));
+    const itemsDatabase = getStoredItems();
     const item = itemsDatabase.find((i) => i.sku.toLowerCase() === sku.toLowerCase());
     return item ? toComputedItem(item) : null;
   },
@@ -227,7 +236,8 @@ export const inventoryService = {
     notesArg?: string,
     userNameArg?: string
   ): Promise<ComputedInventoryItem> {
-    await new Promise((res) => setTimeout(res, 50));
+    await new Promise((res) => setTimeout(res, 40));
+    const itemsDatabase = getStoredItems();
     const item = itemsDatabase.find((i) => i.id === itemId);
     if (!item) throw new Error('Item not found');
 
@@ -275,6 +285,7 @@ export const inventoryService = {
 
     item.currentStock = nextStock;
     item.updatedAt = new Date().toISOString();
+    saveStoredItems(itemsDatabase);
 
     // Record every adjustment in the stock movement ledger
     try {
@@ -325,7 +336,8 @@ export const inventoryService = {
     itemId: string,
     patch: Partial<Omit<InventoryItem, 'id' | 'createdAt'>>
   ): Promise<ComputedInventoryItem> {
-    await new Promise((res) => setTimeout(res, 60));
+    await new Promise((res) => setTimeout(res, 40));
+    const itemsDatabase = getStoredItems();
     const item = itemsDatabase.find((i) => i.id === itemId);
     if (!item) throw new Error('Item not found');
 
@@ -339,6 +351,7 @@ export const inventoryService = {
     }
 
     Object.assign(item, patch, { updatedAt: new Date().toISOString() });
+    saveStoredItems(itemsDatabase);
 
     // Check if new reorderLevel triggers an alert with current stock
     if (patch.reorderLevel !== undefined && item.currentStock <= item.reorderLevel && item.currentStock > 0) {
@@ -356,7 +369,8 @@ export const inventoryService = {
   },
 
   async createItem(newItemData: Omit<InventoryItem, 'id' | 'createdAt' | 'updatedAt' | 'sales30Days'>): Promise<ComputedInventoryItem> {
-    await new Promise((res) => setTimeout(res, 80));
+    await new Promise((res) => setTimeout(res, 50));
+    const itemsDatabase = getStoredItems();
 
     // Ensure no duplicate SKU
     const exists = itemsDatabase.some(
@@ -378,15 +392,22 @@ export const inventoryService = {
     };
 
     itemsDatabase.unshift(created);
+    saveStoredItems(itemsDatabase);
     return toComputedItem(created);
   },
 
   async getCategoryItemCount(category: MaterialCategory): Promise<number> {
+    const itemsDatabase = getStoredItems();
     return itemsDatabase.filter((i) => i.materialCategory === category).length;
   },
 
   async getAllItems(): Promise<ComputedInventoryItem[]> {
-    await new Promise((res) => setTimeout(res, 30));
+    await new Promise((res) => setTimeout(res, 20));
+    const itemsDatabase = getStoredItems();
     return itemsDatabase.map(toComputedItem);
+  },
+
+  _seedInventoryForTesting(items: InventoryItem[]): void {
+    saveStoredItems(items);
   },
 };

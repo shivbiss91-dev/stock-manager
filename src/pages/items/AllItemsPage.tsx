@@ -433,6 +433,29 @@ export const AllItemsPage: React.FC = () => {
                     </td>
                   </tr>
                 ))
+              ) : totalCount === 0 ? (
+                <tr>
+                  <td colSpan={7} className="py-16 text-center">
+                    <div className="max-w-md mx-auto flex flex-col items-center justify-center space-y-3">
+                      <div className="w-14 h-14 rounded-2xl bg-brand-orange/10 text-brand-orange flex items-center justify-center">
+                        <Package className="w-7 h-7" strokeWidth={1.5} />
+                      </div>
+                      <h4 className="text-base font-bold text-slate-900 dark:text-white">
+                        No products added yet.
+                      </h4>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm">
+                        Start building your inventory by adding your first product.
+                      </p>
+                      <button
+                        onClick={() => setIsAddModalOpen(true)}
+                        className="mt-2 px-4 py-2 rounded-xl bg-brand-orange hover:bg-orange-600 text-white font-semibold text-xs shadow-sm transition-colors flex items-center gap-1.5"
+                      >
+                        <Plus className="w-4 h-4" />
+                        <span>Add New Item</span>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
               ) : (
                 <tr>
                   <td colSpan={7} className="py-12 text-center text-slate-400 space-y-2">

@@ -10,15 +10,18 @@ import {
   Phone,
   Mail,
   Download,
+  Plus,
 } from 'lucide-react';
 import { supplierService } from '../../services/supplierService';
 import { Supplier } from '../../types/sales';
 import { formatINR } from '../../utils/formatINR';
+import { AddSupplierModal } from '../../components/parties/AddSupplierModal';
 
 export const SuppliersPage: React.FC = () => {
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
   useEffect(() => {
     supplierService.getSuppliers().then(setSuppliers);
@@ -55,6 +58,14 @@ export const SuppliersPage: React.FC = () => {
             Authorized raw material mills, packaging vendors, and industrial chemical suppliers.
           </p>
         </div>
+
+        <button
+          onClick={() => setIsAddModalOpen(true)}
+          className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-accent-orange hover:bg-accent-orange/90 text-white font-semibold text-xs shadow-sm transition"
+        >
+          <Plus className="w-4 h-4" />
+          <span>Add Supplier</span>
+        </button>
       </div>
 
       {/* Filter and Search Bar */}
@@ -106,51 +117,77 @@ export const SuppliersPage: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-white/[0.04] text-slate-700 dark:text-slate-300">
-              {filteredSuppliers.map((s) => (
-                <tr key={s.id} className="hover:bg-slate-50/60 dark:hover:bg-white/[0.02] transition">
-                  <td className="py-3 px-4">
-                    <span className="font-semibold text-slate-900 dark:text-white block line-clamp-1">
-                      {s.companyName}
-                    </span>
-                    <span className="text-[11px] text-slate-400 block font-mono">ID: {s.id}</span>
-                  </td>
-
-                  <td className="py-3 px-3 whitespace-nowrap">
-                    <span className="inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-accent-orange/15 text-accent-orange border border-accent-orange/30">
-                      {s.category}
-                    </span>
-                  </td>
-
-                  <td className="py-3 px-3">
-                    <span className="font-mono font-medium text-slate-800 dark:text-slate-200 block">
-                      {s.gstin}
-                    </span>
-                    <span className="text-[11px] text-slate-400">
-                      {s.city}, {s.state}
-                    </span>
-                  </td>
-
-                  <td className="py-3 px-3 text-center whitespace-nowrap font-medium text-slate-800 dark:text-slate-200">
-                    {s.leadTimeDays} Days
-                  </td>
-
-                  <td className="py-3 px-3 text-center whitespace-nowrap">
-                    <span className="inline-flex items-center gap-1 font-bold text-amber-500">
-                      <Star className="w-3.5 h-3.5 fill-amber-500" />
-                      <span>{s.rating.toFixed(1)}</span>
-                    </span>
-                  </td>
-
-                  <td className="py-3 px-4 text-right whitespace-nowrap text-[11px] text-slate-500">
-                    <p>{s.phone}</p>
-                    <p className="text-[10px] text-slate-400">{s.contactPerson}</p>
+              {filteredSuppliers.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="py-12 text-center text-slate-400">
+                    <div className="flex flex-col items-center justify-center space-y-2">
+                      <Truck className="w-8 h-8 text-slate-400" />
+                      <p className="font-semibold text-slate-700 dark:text-slate-300">No suppliers registered yet</p>
+                      <p className="text-xs">Add your manufacturing mills, vendors, and raw material suppliers.</p>
+                      <button
+                        onClick={() => setIsAddModalOpen(true)}
+                        className="mt-2 px-3.5 py-1.5 rounded-xl bg-accent-orange text-white text-xs font-semibold hover:bg-accent-orange/90 transition shadow-sm"
+                      >
+                        + Add First Supplier
+                      </button>
+                    </div>
                   </td>
                 </tr>
-              ))}
+              ) : (
+                filteredSuppliers.map((s) => (
+                  <tr key={s.id} className="hover:bg-slate-50/60 dark:hover:bg-white/[0.02] transition">
+                    <td className="py-3 px-4">
+                      <span className="font-semibold text-slate-900 dark:text-white block line-clamp-1">
+                        {s.companyName}
+                      </span>
+                      <span className="text-[11px] text-slate-400 block font-mono">ID: {s.id}</span>
+                    </td>
+
+                    <td className="py-3 px-3 whitespace-nowrap">
+                      <span className="inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-accent-orange/15 text-accent-orange border border-accent-orange/30">
+                        {s.category}
+                      </span>
+                    </td>
+
+                    <td className="py-3 px-3">
+                      <span className="font-mono font-medium text-slate-800 dark:text-slate-200 block">
+                        {s.gstin}
+                      </span>
+                      <span className="text-[11px] text-slate-400">
+                        {s.city}, {s.state}
+                      </span>
+                    </td>
+
+                    <td className="py-3 px-3 text-center whitespace-nowrap font-medium text-slate-800 dark:text-slate-200">
+                      {s.leadTimeDays} Days
+                    </td>
+
+                    <td className="py-3 px-3 text-center whitespace-nowrap">
+                      <span className="inline-flex items-center gap-1 font-bold text-amber-500">
+                        <Star className="w-3.5 h-3.5 fill-amber-500" />
+                        <span>{s.rating.toFixed(1)}</span>
+                      </span>
+                    </td>
+
+                    <td className="py-3 px-4 text-right whitespace-nowrap text-[11px] text-slate-500">
+                      <p>{s.phone}</p>
+                      <p className="text-[10px] text-slate-400">{s.contactPerson}</p>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
       </div>
+
+      {isAddModalOpen && (
+        <AddSupplierModal
+          isOpen={isAddModalOpen}
+          onClose={() => setIsAddModalOpen(false)}
+          onSupplierCreated={(newS) => setSuppliers([newS, ...suppliers])}
+        />
+      )}
     </div>
   );
 };

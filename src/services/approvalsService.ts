@@ -1,7 +1,9 @@
+import { StorageService, STORAGE_KEYS } from './storageService';
+
 export interface ApprovalRequest {
   id: string;
   type: 'price_adjustment' | 'stock_adjustment' | 'item_edit' | 'discount_approval';
-  targetId: string; // itemId or invoiceId
+  targetId: string;
   targetTitle: string;
   requestedBy: string;
   requestedByRole: string;
@@ -15,91 +17,73 @@ export interface ApprovalRequest {
   reviewNotes?: string;
 }
 
-let approvalsDatabase: ApprovalRequest[] = [
-  {
-    id: 'appr-1',
-    type: 'price_adjustment',
-    targetId: 'item-wd-0001',
-    targetTitle: 'Gurjan BWP Marine Plywood 18mm',
-    requestedBy: 'Amit Verma',
-    requestedByRole: 'Billing Staff',
-    requestedAt: '2026-10-08T10:15:00Z',
-    status: 'pending',
-    oldValue: '₹2,450.00 / sheet',
-    newValue: '₹2,320.00 / sheet (-5.3%)',
-    reason: 'Client Apex Furnishings placing bulk order of 250 sheets',
-  },
-  {
-    id: 'appr-2',
-    type: 'discount_approval',
-    targetId: 'inv-2026-00392',
-    targetTitle: 'Invoice INV-2026-27-00392 (Balaji Contractors)',
-    requestedBy: 'Amit Verma',
-    requestedByRole: 'Billing Staff',
-    requestedAt: '2026-10-07T16:30:00Z',
-    status: 'pending',
-    oldValue: 'Standard 2% Discount',
-    newValue: 'Requested 4.5% Special Discount',
-    reason: 'Advance RTGS payment clearance agreed',
-  },
-  {
-    id: 'appr-3',
-    type: 'stock_adjustment',
-    targetId: 'item-mt-0012',
-    targetTitle: 'Tata Tiscon TMT Fe550D (16mm)',
-    requestedBy: 'Priya Patel',
-    requestedByRole: 'Manager',
-    requestedAt: '2026-10-06T14:00:00Z',
-    status: 'pending',
-    oldValue: '120 Bundles',
-    newValue: '115 Bundles (-5 write-off)',
-    reason: 'Transit bend damage during trailer unloading',
-  },
-];
-
 export const approvalsService = {
-  async getApprovals(): Promise<ApprovalRequest[]> {
-    await new Promise((res) => setTimeout(res, 40));
-    return [...approvalsDatabase];
+  async getApprovals(status?: 'pending' | 'approved' | 'rejected'): Promise<ApprovalRequest[]> {
+    await new Promise((res) => setTimeout(res, 20));
+    const list = StorageService.get<ApprovalRequest[]>(STORAGE_KEYS.APPROVALS, []);
+    if (!status) return [...list];
+    return list.filter((a) => a.status === status);
   },
 
-  async createApproval(request: Omit<ApprovalRequest, 'id' | 'requestedAt' | 'status'>): Promise<ApprovalRequest> {
-    await new Promise((res) => setTimeout(res, 50));
-    const created: ApprovalRequest = {
+  async submitRequest(request: Omit<ApprovalRequest, 'id' | 'status' | 'requestedAt'>): Promise<ApprovalRequest> {
+    await new Promise((res) => setTimeout(res, 30));
+    const list = StorageService.get<ApprovalRequest[]>(STORAGE_KEYS.APPROVALS, []);
+    const newRequest: ApprovalRequest = {
       ...request,
       id: `appr-${Date.now()}`,
-      requestedAt: new Date().toISOString(),
       status: 'pending',
+      requestedAt: new Date().toISOString(),
     };
-    approvalsDatabase.unshift(created);
-    return created;
+    list.unshift(newRequest);
+    StorageService.set(STORAGE_KEYS.APPROVALS, list);
+    return newRequest;
   },
 
-  async createRequest(request: Omit<ApprovalRequest, 'id' | 'requestedAt' | 'status'>): Promise<ApprovalRequest> {
-    return this.createApproval(request);
+  async createRequest(request: Omit<ApprovalRequest, 'id' | 'status' | 'requestedAt'>): Promise<ApprovalRequest> {
+    return approvalsService.submitRequest(request);
   },
 
-  async approveRequest(id: string, reviewedBy: string, reviewNotes?: string): Promise<ApprovalRequest> {
-    await new Promise((res) => setTimeout(res, 50));
-    const item = approvalsDatabase.find((a) => a.id === id);
-    if (!item) throw new Error('Request not found');
-
-    item.status = 'approved';
-    item.reviewedBy = reviewedBy;
-    item.reviewedAt = new Date().toISOString();
-    item.reviewNotes = reviewNotes || 'Approved by administrator';
-    return item;
+  async createApproval(request: Omit<ApprovalRequest, 'id' | 'status' | 'requestedAt'>): Promise<ApprovalRequest> {
+    return approvalsService.submitRequest(request);
   },
 
-  async rejectRequest(id: string, reviewedBy: string, reviewNotes: string): Promise<ApprovalRequest> {
-    await new Promise((res) => setTimeout(res, 50));
-    const item = approvalsDatabase.find((a) => a.id === id);
-    if (!item) throw new Error('Request not found');
+  async reviewRequest(
+    id: string,
+    decision: 'approved' | 'rejected',
+    reviewedBy: string,
+    reviewNotes?: string
+  ): Promise<ApprovalRequest> {
+    await new Promise((res) => setTimeout(res, 30));
+    const list = StorageService.get<ApprovalRequest[]>(STORAGE_KEYS.APPROVALS, []);
+    const request = list.find((a) => a.id === id);
+    if (!request) throw new Error('Approval request not found');
 
-    item.status = 'rejected';
-    item.reviewedBy = reviewedBy;
-    item.reviewedAt = new Date().toISOString();
-    item.reviewNotes = reviewNotes;
-    return item;
+    request.status = decision;
+    request.reviewedBy = reviewedBy;
+    request.reviewedAt = new Date().toISOString();
+    request.reviewNotes = reviewNotes;
+
+    StorageService.set(STORAGE_KEYS.APPROVALS, list);
+    return { ...request };
+  },
+
+  async approveRequest(
+    id: string,
+    reviewedBy: string,
+    reviewNotes?: string
+  ): Promise<ApprovalRequest> {
+    return approvalsService.reviewRequest(id, 'approved', reviewedBy, reviewNotes);
+  },
+
+  async rejectRequest(
+    id: string,
+    reviewedBy: string,
+    reviewNotes?: string
+  ): Promise<ApprovalRequest> {
+    return approvalsService.reviewRequest(id, 'rejected', reviewedBy, reviewNotes);
+  },
+
+  _seedApprovalsForTesting(approvals: ApprovalRequest[]): void {
+    StorageService.set(STORAGE_KEYS.APPROVALS, approvals);
   },
 };

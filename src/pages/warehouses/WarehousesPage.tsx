@@ -6,31 +6,32 @@ import {
   Phone,
   Package,
   Layers,
-  TrendingUp,
-  ArrowRight,
-  ShieldCheck,
+  Plus,
   Building2,
   HardDrive,
 } from 'lucide-react';
 import { warehouseService } from '../../services/warehouseService';
 import { Warehouse } from '../../types/warehouse';
 import { formatINR } from '../../utils/formatINR';
+import { Button } from '../../components/common/Button';
+import { EmptyState } from '../../components/common/EmptyState';
+import { AddWarehouseModal } from '../../components/warehouses/AddWarehouseModal';
 
 export const WarehousesPage: React.FC = () => {
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+
+  const loadWarehouses = () => {
+    setIsLoading(true);
+    warehouseService.getWarehouses().then((data) => {
+      setWarehouses(data.filter((w) => w.id !== 'all'));
+      setIsLoading(false);
+    });
+  };
 
   useEffect(() => {
-    let isMounted = true;
-    warehouseService.getWarehouses().then((data) => {
-      if (isMounted) {
-        setWarehouses(data.filter((w) => w.id !== 'all'));
-        setIsLoading(false);
-      }
-    });
-    return () => {
-      isMounted = false;
-    };
+    loadWarehouses();
   }, []);
 
   const totalValue = warehouses.reduce((acc, w) => acc + w.stockValueINR, 0);
@@ -46,7 +47,7 @@ export const WarehousesPage: React.FC = () => {
               Warehouse Network & Hubs
             </h1>
             <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-accent-blue/15 text-accent-blue border border-accent-blue/30">
-              4 Regional Hubs
+              {warehouses.length} {warehouses.length === 1 ? 'Facility' : 'Facilities'}
             </span>
           </div>
           <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
@@ -54,119 +55,129 @@ export const WarehousesPage: React.FC = () => {
           </p>
         </div>
 
-        {/* Global valuation stats */}
-        <div className="flex items-center gap-4 template-card p-3.5 rounded-[20px] border border-slate-200 dark:border-white/[0.06] text-xs shadow-soft">
-          <div>
-            <span className="text-slate-400 block text-[10px]">Consolidated Inventory Value</span>
-            <span className="font-bold text-sm text-slate-900 dark:text-white">
-              {formatINR(totalValue)}
-            </span>
-          </div>
-          <div className="border-l border-slate-200 dark:border-white/[0.08] pl-4">
-            <span className="text-slate-400 block text-[10px]">Total Stock In Warehouse</span>
-            <span className="font-bold text-sm text-slate-900 dark:text-white">
-              {totalPieces.toLocaleString('en-IN')} units
-            </span>
-          </div>
+        <div className="flex items-center gap-3">
+          {warehouses.length > 0 && (
+            <div className="flex items-center gap-4 template-card p-3 rounded-[20px] border border-slate-200 dark:border-white/[0.06] text-xs shadow-soft">
+              <div>
+                <span className="text-slate-400 block text-[10px]">Consolidated Inventory</span>
+                <span className="font-bold text-sm text-slate-900 dark:text-white">
+                  {formatINR(totalValue)}
+                </span>
+              </div>
+              <div className="border-l border-slate-200 dark:border-white/[0.08] pl-4">
+                <span className="text-slate-400 block text-[10px]">Total Stock</span>
+                <span className="font-bold text-sm text-slate-900 dark:text-white">
+                  {totalPieces.toLocaleString('en-IN')} units
+                </span>
+              </div>
+            </div>
+          )}
+
+          <Button
+            variant="primary"
+            size="md"
+            leftIcon={<Plus className="w-4 h-4" />}
+            onClick={() => setIsAddModalOpen(true)}
+          >
+            Add Warehouse
+          </Button>
         </div>
       </div>
 
-      {/* Hub Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {warehouses.map((wh) => (
-          <div
-            key={wh.id}
-            className="template-card border border-slate-200 dark:border-white/[0.06] rounded-[20px] p-5 sm:p-6 shadow-soft space-y-4 hover:border-accent-orange/40 transition"
-          >
-            {/* Top row */}
-            <div className="flex items-start justify-between">
-              <div className="flex items-center gap-3">
-                <div className="p-3 rounded-xl bg-accent-orange/10 text-accent-orange">
-                  <WarehouseIcon className="w-6 h-6" />
+      {isLoading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {Array.from({ length: 2 }).map((_, i) => (
+            <div
+              key={i}
+              className="h-64 rounded-[20px] bg-slate-100 dark:bg-white/[0.02] border border-slate-200 dark:border-white/[0.06] animate-pulse"
+            />
+          ))}
+        </div>
+      ) : warehouses.length === 0 ? (
+        <EmptyState
+          title="No warehouses configured yet"
+          description="Add your first warehouse or storage facility to start tracking inventory balances, receiving goods, and scheduling inter-hub transfers."
+          actionText="Add Warehouse Facility"
+          onAction={() => setIsAddModalOpen(true)}
+          icon={<WarehouseIcon className="w-7 h-7 text-brand-orange" />}
+          className="py-16"
+        />
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {warehouses.map((wh) => (
+            <div
+              key={wh.id}
+              className="template-card border border-slate-200 dark:border-white/[0.06] rounded-[20px] p-6 shadow-soft space-y-4 hover:border-accent-orange/40 transition group"
+            >
+              <div className="flex items-start justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-2xl bg-accent-orange/10 text-accent-orange flex items-center justify-center font-bold text-base border border-accent-orange/20">
+                    <Building2 className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-bold text-base text-slate-900 dark:text-white group-hover:text-accent-orange transition-colors">
+                        {wh.name}
+                      </h3>
+                      {wh.isPrimary && (
+                        <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                          Primary
+                        </span>
+                      )}
+                    </div>
+                    <span className="text-xs font-mono text-slate-400">Code: {wh.code}</span>
+                  </div>
+                </div>
+
+                <div className="text-right">
+                  <span className="text-[10px] text-slate-400 block">Inventory Value</span>
+                  <span className="font-bold text-sm text-emerald-600 dark:text-emerald-400">
+                    {formatINR(wh.stockValueINR)}
+                  </span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 py-3 border-y border-slate-100 dark:border-white/[0.06] text-xs">
+                <div>
+                  <span className="text-slate-400 block text-[10px]">Stored SKUs</span>
+                  <strong className="text-slate-900 dark:text-white font-mono">{wh.totalItemsCount}</strong>
                 </div>
                 <div>
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-bold text-base text-slate-900 dark:text-white">
-                      {wh.name}
-                    </h3>
-                    {wh.isPrimary && (
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300 uppercase">
-                        Primary HQ
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-xs text-slate-500 font-mono mt-0.5">
-                    Hub Code: {wh.code} • GST State: {wh.stateCode} ({wh.state})
-                  </p>
+                  <span className="text-slate-400 block text-[10px]">Units on Hand</span>
+                  <strong className="text-slate-900 dark:text-white font-mono">{wh.totalPieces.toLocaleString('en-IN')}</strong>
+                </div>
+                <div>
+                  <span className="text-slate-400 block text-[10px]">Total Floor Area</span>
+                  <strong className="text-slate-900 dark:text-white">{wh.totalCapacitySqFt.toLocaleString('en-IN')} sq.ft</strong>
+                </div>
+                <div>
+                  <span className="text-slate-400 block text-[10px]">Space Utilization</span>
+                  <strong className="text-slate-900 dark:text-white">{wh.utilizedCapacityPercent.toFixed(1)}%</strong>
+                </div>
+              </div>
+
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between text-xs text-slate-400 gap-2 pt-1">
+                <div className="flex items-center gap-1.5 truncate">
+                  <MapPin className="w-3.5 h-3.5 text-slate-500 flex-shrink-0" />
+                  <span className="truncate">{wh.address}</span>
+                </div>
+                <div className="flex items-center gap-1.5 flex-shrink-0">
+                  <Phone className="w-3.5 h-3.5 text-slate-500" />
+                  <span>{wh.phone}</span>
                 </div>
               </div>
             </div>
+          ))}
+        </div>
+      )}
 
-            {/* Address & Contact */}
-            <div className="p-3 rounded-xl bg-slate-50/50 dark:bg-white/[0.02] border border-slate-100 dark:border-white/[0.06] text-xs space-y-1">
-              <div className="flex items-start gap-2 text-slate-600 dark:text-slate-300">
-                <MapPin className="w-3.5 h-3.5 text-accent-orange flex-shrink-0 mt-0.5" />
-                <span>{wh.address}, Pincode: {wh.pincode}</span>
-              </div>
-              <div className="flex items-center gap-2 text-slate-500 text-[11px] pt-1">
-                <Phone className="w-3 h-3 text-slate-400" />
-                <span>Manager: {wh.contactPerson} ({wh.phone})</span>
-              </div>
-            </div>
-
-            {/* Capacity meter */}
-            <div className="space-y-1.5">
-              <div className="flex justify-between text-xs font-semibold">
-                <span className="text-slate-600 dark:text-slate-400">Capacity Utilization</span>
-                <span className={wh.utilizedCapacityPercent > 80 ? 'text-rose-500' : 'text-emerald-400'}>
-                  {wh.utilizedCapacityPercent}% ({wh.totalCapacitySqFt.toLocaleString('en-IN')} sq.ft)
-                </span>
-              </div>
-              <div className="w-full h-2 rounded-full bg-slate-100 dark:bg-white/[0.06] overflow-hidden">
-                <div
-                  className={`h-full rounded-full transition-all duration-500 ${
-                    wh.utilizedCapacityPercent > 80 ? 'bg-rose-500' : 'bg-accent-orange'
-                  }`}
-                  style={{ width: `${wh.utilizedCapacityPercent}%` }}
-                ></div>
-              </div>
-            </div>
-
-            {/* Metrics row */}
-            <div className="grid grid-cols-3 gap-2 pt-2 border-t border-slate-100 dark:border-white/[0.06] text-xs">
-              <div>
-                <span className="text-slate-400 text-[11px]">Total SKUs</span>
-                <p className="font-bold text-slate-900 dark:text-white mt-0.5">
-                  {wh.totalItemsCount.toLocaleString('en-IN')}
-                </p>
-              </div>
-              <div>
-                <span className="text-slate-400 text-[11px]">Physical Units</span>
-                <p className="font-bold text-slate-900 dark:text-white mt-0.5">
-                  {wh.totalPieces.toLocaleString('en-IN')}
-                </p>
-              </div>
-              <div>
-                <span className="text-slate-400 text-[11px]">Hub Stock Value</span>
-                <p className="font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">
-                  {formatINR(wh.stockValueINR)}
-                </p>
-              </div>
-            </div>
-
-            {/* Link to view inventory */}
-            <div className="pt-2">
-              <Link
-                to={`/items`}
-                className="w-full py-2 px-3 text-xs font-semibold rounded-xl template-input border border-slate-200 dark:border-white/[0.08] hover:border-accent-orange/40 text-slate-700 dark:text-slate-200 transition flex items-center justify-center gap-1.5"
-              >
-                <span>Browse {wh.name} Stock</span>
-                <ArrowRight className="w-3.5 h-3.5 text-accent-orange" />
-              </Link>
-            </div>
-          </div>
-        ))}
-      </div>
+      {isAddModalOpen && (
+        <AddWarehouseModal
+          isOpen={isAddModalOpen}
+          onClose={() => setIsAddModalOpen(false)}
+          onCreated={() => loadWarehouses()}
+        />
+      )}
     </div>
   );
 };

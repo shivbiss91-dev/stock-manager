@@ -1,10 +1,85 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeAll } from 'vitest';
 import { purchaseService } from '../services/purchaseService';
 import { warehouseService } from '../services/warehouseService';
 import { inventoryService } from '../services/inventoryService';
 import { customerService } from '../services/customerService';
+import { MOCK_WAREHOUSES } from './fixtures/warehouses';
+import { MASTER_INVENTORY } from './fixtures/inventorySeed';
+import { MOCK_CUSTOMERS } from './fixtures/customers';
 
 describe('Phase 6: Purchases, Transfers, Hubs, Ledgers & Reports', () => {
+  beforeAll(() => {
+    warehouseService._seedWarehousesForTesting(MOCK_WAREHOUSES);
+    inventoryService._seedInventoryForTesting(MASTER_INVENTORY);
+    customerService._seedCustomersForTesting(MOCK_CUSTOMERS);
+
+    purchaseService._seedSupplierBillsForTesting([
+      {
+        id: 'sb-001',
+        poId: 'po-001',
+        poNumber: 'PO-2026-0001',
+        supplierId: 'sup-001',
+        supplierName: 'Greenply Industries Ltd',
+        billNumber: 'GP-BILL-01',
+        billDate: '2026-10-01',
+        dueDate: '2026-11-15',
+        totalAmount: 253700,
+        amountPaid: 0,
+        balanceDue: 253700,
+        status: 'unpaid',
+      },
+    ]);
+
+    purchaseService._seedQuotationsForTesting([
+      {
+        id: 'qt-001',
+        quotationNumber: 'QT-2026-0001',
+        date: '2026-10-01',
+        validUntil: '2026-10-15',
+        customerId: 'cust-001',
+        customerName: 'Rajdhani Timber & Plywood Mart',
+        status: 'draft',
+        items: [],
+        subtotalTaxable: 100000,
+        totalTax: 18000,
+        grandTotal: 118000,
+        createdBy: 'Admin',
+      },
+    ]);
+
+    purchaseService._seedSalesOrdersForTesting([
+      {
+        id: 'so-001',
+        orderNumber: 'SO-2026-0001',
+        date: '2026-10-01',
+        customerId: 'cust-001',
+        customerName: 'Rajdhani Timber & Plywood Mart',
+        status: 'confirmed',
+        items: [],
+        subtotalTaxable: 100000,
+        totalTax: 18000,
+        grandTotal: 118000,
+        createdBy: 'Admin',
+      },
+    ]);
+
+    purchaseService._seedReturnsForTesting([
+      {
+        id: 'crn-001',
+        returnNumber: 'CRN-2026-001',
+        date: '2026-10-01',
+        invoiceNumber: 'INV-2026-0001',
+        customerId: 'cust-001',
+        customerName: 'Rajdhani Timber & Plywood Mart',
+        status: 'approved',
+        totalAmountINR: 25000,
+        refundAmount: 25000,
+        reason: 'Damaged in transit',
+        createdBy: 'Admin',
+        items: [],
+      } as any,
+    ]);
+  });
   it('1. Verifies 4 regional warehouse hubs with capacity and valuation metrics', async () => {
     const all = await warehouseService.getWarehouses();
     const hubs = all.filter((h) => h.id !== 'all');

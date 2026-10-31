@@ -223,8 +223,25 @@ export const CustomersPage: React.FC = () => {
                     </td>
                   </tr>
                 ))
-              ) : filteredCustomers.slice(0, 30).map((c) => (
-                <tr key={c.id} className="hover:bg-slate-50/60 dark:hover:bg-white/[0.02] transition">
+              ) : filteredCustomers.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="py-12 text-center text-slate-400">
+                    <div className="flex flex-col items-center justify-center space-y-2">
+                      <Users className="w-8 h-8 text-slate-400" />
+                      <p className="font-semibold text-slate-700 dark:text-slate-300">No customers registered yet</p>
+                      <p className="text-xs">Add your wholesale buyers and trade partners to manage orders and credit.</p>
+                      <button
+                        onClick={() => setIsAddModalOpen(true)}
+                        className="mt-2 px-3.5 py-1.5 rounded-xl bg-accent-orange text-white text-xs font-semibold hover:bg-accent-orange/90 transition shadow-sm"
+                      >
+                        + Add First Customer
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                filteredCustomers.slice(0, 30).map((c) => (
+                  <tr key={c.id} className="hover:bg-slate-50/60 dark:hover:bg-white/[0.02] transition">
                   <td className="py-3 px-4">
                     <span className="font-semibold text-slate-900 dark:text-white block line-clamp-1">
                       {c.companyName}
@@ -266,8 +283,9 @@ export const CustomersPage: React.FC = () => {
                     <p className="text-[10px] text-slate-400">{c.email}</p>
                   </td>
                 </tr>
-              ))}
-            </tbody>
+              ))
+            )}
+          </tbody>
           </table>
         </div>
       </div>

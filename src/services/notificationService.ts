@@ -1,32 +1,30 @@
-import { MOCK_NOTIFICATIONS } from '../data/notifications';
 import { NotificationItem } from '../types/notification';
-
-let notificationsState = [...MOCK_NOTIFICATIONS];
+import { StorageService, STORAGE_KEYS } from './storageService';
 
 export const notificationService = {
   async getNotifications(): Promise<NotificationItem[]> {
-    await new Promise((res) => setTimeout(res, 80));
-    return [...notificationsState];
+    return StorageService.get<NotificationItem[]>(STORAGE_KEYS.NOTIFICATIONS, []);
   },
 
   async markAsRead(id: string): Promise<NotificationItem[]> {
-    await new Promise((res) => setTimeout(res, 50));
-    notificationsState = notificationsState.map((n) =>
-      n.id === id ? { ...n, isRead: true } : n
-    );
-    return [...notificationsState];
+    const list = StorageService.get<NotificationItem[]>(STORAGE_KEYS.NOTIFICATIONS, []);
+    const updated = list.map((n) => (n.id === id ? { ...n, isRead: true } : n));
+    StorageService.set(STORAGE_KEYS.NOTIFICATIONS, updated);
+    return updated;
   },
 
   async markAllAsRead(): Promise<NotificationItem[]> {
-    await new Promise((res) => setTimeout(res, 50));
-    notificationsState = notificationsState.map((n) => ({ ...n, isRead: true }));
-    return [...notificationsState];
+    const list = StorageService.get<NotificationItem[]>(STORAGE_KEYS.NOTIFICATIONS, []);
+    const updated = list.map((n) => ({ ...n, isRead: true }));
+    StorageService.set(STORAGE_KEYS.NOTIFICATIONS, updated);
+    return updated;
   },
 
   async deleteNotification(id: string): Promise<NotificationItem[]> {
-    await new Promise((res) => setTimeout(res, 50));
-    notificationsState = notificationsState.filter((n) => n.id !== id);
-    return [...notificationsState];
+    const list = StorageService.get<NotificationItem[]>(STORAGE_KEYS.NOTIFICATIONS, []);
+    const updated = list.filter((n) => n.id !== id);
+    StorageService.set(STORAGE_KEYS.NOTIFICATIONS, updated);
+    return updated;
   },
 
   async addNotification(
@@ -39,7 +37,10 @@ export const notificationService = {
       timestamp: item.timestamp || new Date().toISOString(),
       priority: item.priority || 'medium',
     };
-    notificationsState.unshift(newNotif);
+    const list = StorageService.get<NotificationItem[]>(STORAGE_KEYS.NOTIFICATIONS, []);
+    const updated = [newNotif, ...list];
+    StorageService.set(STORAGE_KEYS.NOTIFICATIONS, updated);
     return newNotif;
   },
 };
+

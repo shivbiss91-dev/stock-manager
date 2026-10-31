@@ -1,9 +1,12 @@
-import { describe, it, expect } from 'vitest';
-import { MASTER_INVENTORY } from '../data/inventorySeed';
+import { describe, it, expect, beforeAll } from 'vitest';
+import { MASTER_INVENTORY } from './fixtures/inventorySeed';
 import { inventoryService, computeItemStatus } from '../services/inventoryService';
 import { dashboardService } from '../services/dashboardService';
 
 describe('Phase 2: Master Inventory Dataset Constraints', () => {
+  beforeAll(() => {
+    inventoryService._seedInventoryForTesting(MASTER_INVENTORY);
+  });
   it('contains over 3,000 items in total', () => {
     expect(MASTER_INVENTORY.length).toBeGreaterThanOrEqual(3000);
     expect(MASTER_INVENTORY.length).toBe(3420);

@@ -1,12 +1,84 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeAll } from 'vitest';
 import { userService } from '../services/userService';
 import { auditLogService } from '../services/auditLogService';
 import { approvalsService } from '../services/approvalsService';
 import { documentsService } from '../services/documentsService';
 import { backupService } from '../services/backupService';
 import { settingsService } from '../services/settingsService';
+import { inventoryService } from '../services/inventoryService';
+import { customerService } from '../services/customerService';
+import { warehouseService } from '../services/warehouseService';
+import { MOCK_USERS } from './fixtures/users';
+import { MASTER_INVENTORY } from './fixtures/inventorySeed';
+import { MOCK_CUSTOMERS } from './fixtures/customers';
+import { MOCK_WAREHOUSES } from './fixtures/warehouses';
 
 describe('Phase 7: Administration, Roles, Approvals, Audit & Recovery', () => {
+  beforeAll(() => {
+    userService._seedUsersForTesting(MOCK_USERS);
+    inventoryService._seedInventoryForTesting(MASTER_INVENTORY);
+    customerService._seedCustomersForTesting(MOCK_CUSTOMERS);
+    warehouseService._seedWarehousesForTesting(MOCK_WAREHOUSES);
+    settingsService._seedSettingsForTesting({
+      gstin: '27AABCS1429B1Z2',
+      bankName: 'HDFC Bank Ltd',
+      stateCode: '27',
+    });
+    auditLogService._seedAuditLogsForTesting([
+      {
+        id: 'aud-001',
+        timestamp: '2026-10-08T12:00:00Z',
+        userId: 'usr-001',
+        userName: 'Rajesh Sharma',
+        userRole: 'admin',
+        action: 'login',
+        module: 'Sales',
+        targetId: 'inv-001',
+        targetDescription: 'Invoice created',
+      },
+    ]);
+    approvalsService._seedApprovalsForTesting([
+      {
+        id: 'appr-001',
+        type: 'price_adjustment',
+        targetId: 'item-wd-0001',
+        targetTitle: 'Teak Plywood',
+        requestedBy: 'Amit Verma',
+        requestedByRole: 'staff',
+        requestedAt: '2026-10-08T11:00:00Z',
+        status: 'pending',
+        oldValue: '₹2,400.00',
+        newValue: '₹2,350.00',
+        reason: 'Bulk client discount',
+      },
+    ]);
+    documentsService._seedDocumentsForTesting([
+      {
+        id: 'doc-001',
+        title: 'GST Registration Certificate',
+        category: 'GST & Statutory',
+        fileName: 'gst_cert.pdf',
+        fileSize: '1.2 MB',
+        fileType: 'pdf',
+        uploadedBy: 'Rajesh Sharma',
+        uploadedAt: '2026-10-01T10:00:00Z',
+        status: 'verified',
+        issuer: 'GSTN',
+      },
+      {
+        id: 'doc-002',
+        title: 'BIS Quality Seal',
+        category: 'BIS & Quality',
+        fileName: 'bis.pdf',
+        fileSize: '2.1 MB',
+        fileType: 'pdf',
+        uploadedBy: 'Rajesh Sharma',
+        uploadedAt: '2026-10-02T10:00:00Z',
+        status: 'verified',
+        issuer: 'BIS',
+      },
+    ]);
+  });
   it('User Service: fetches, creates, updates roles, and toggles status', async () => {
     const users = await userService.getUsers();
     expect(users.length).toBeGreaterThan(0);

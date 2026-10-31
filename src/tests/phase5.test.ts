@@ -1,11 +1,17 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeAll } from 'vitest';
 import { validateGSTIN, getStateCodeFromGSTIN, calculateGSTBreakup } from '../utils/gstUtils';
 import { numberToWordsINR } from '../utils/numberToWords';
 import { customerService } from '../services/customerService';
 import { invoiceService } from '../services/invoiceService';
 import { inventoryService } from '../services/inventoryService';
+import { MOCK_CUSTOMERS } from './fixtures/customers';
+import { MASTER_INVENTORY } from './fixtures/inventorySeed';
 
 describe('Phase 5: GST Billing Engine, Calculations & Invoice Generator', () => {
+  beforeAll(() => {
+    customerService._seedCustomersForTesting(MOCK_CUSTOMERS);
+    inventoryService._seedInventoryForTesting(MASTER_INVENTORY);
+  });
   it('1. Validates standard 15-character Indian GSTIN format', () => {
     // Valid GSTINs
     expect(validateGSTIN('27AAACS1429B1Z4')).toBe(true);

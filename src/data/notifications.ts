@@ -1,54 +1,7 @@
 import { NotificationItem } from '../types/notification';
 
-export const MOCK_NOTIFICATIONS: NotificationItem[] = [
-  {
-    id: 'notif-1',
-    title: 'Low Stock Alert',
-    message: 'Teak Marine Plywood 18mm (SKU: WD-TK-PLY-18) is down to 24 sheets (Reorder level: 50).',
-    type: 'low_stock',
-    timestamp: '2026-10-08T11:15:00Z',
-    isRead: false,
-    link: '/items/item-wd-001',
-    priority: 'urgent',
-  },
-  {
-    id: 'notif-2',
-    title: 'Approval Required',
-    message: 'Amit Verma requested a 4.5% discount approval for Apex Furnishings on Invoice INV-2026-27-00142.',
-    type: 'approval_required',
-    timestamp: '2026-10-08T10:30:00Z',
-    isRead: false,
-    link: '/approvals',
-    priority: 'high',
-  },
-  {
-    id: 'notif-3',
-    title: 'Payment Overdue (₹3,45,000)',
-    message: 'Payment from Rajdhani Timber Mart (Bhopal) for INV-2026-27-00108 has exceeded 45-day credit terms.',
-    type: 'payment_overdue',
-    timestamp: '2026-10-08T09:00:00Z',
-    isRead: false,
-    link: '/sales/invoices',
-    priority: 'high',
-  },
-  {
-    id: 'notif-4',
-    title: 'Goods Inward Received',
-    message: 'GRN-2026-0089: 450 sheets of Malaysian Hardwood arrived at Bhiwandi Central Hub from Greenply Ltd.',
-    type: 'order_update',
-    timestamp: '2026-10-08T08:00:00Z',
-    isRead: true,
-    link: '/purchases/grn',
-    priority: 'medium',
-  },
-  {
-    id: 'notif-5',
-    title: 'Daily Cloud Backup Complete',
-    message: 'Automated encrypted system snapshot completed successfully (84.2 MB archive).',
-    type: 'backup_status',
-    timestamp: '2026-10-08T03:00:00Z',
-    isRead: true,
-    link: '/backup',
-    priority: 'low',
-  },
-];
+/**
+ * Notifications: Empty initial collection for production.
+ * Real notifications are generated dynamically by system events (low stock, approvals, audits).
+ */
+export const MOCK_NOTIFICATIONS: NotificationItem[] = [];

@@ -22,6 +22,21 @@ export const BackupPage: React.FC = () => {
   const [isExporting, setIsExporting] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
   const [restoreModalData, setRestoreModalData] = useState<DatabaseSnapshot['metadata'] | null>(null);
+  const [dbStats, setDbStats] = useState({
+    items: 0,
+    parties: 0,
+    warehouses: 0,
+  });
+
+  React.useEffect(() => {
+    backupService.generateSnapshot().then((snapshot) => {
+      setDbStats({
+        items: snapshot.metadata.itemsCount,
+        parties: snapshot.metadata.customersCount + snapshot.metadata.suppliersCount,
+        warehouses: snapshot.metadata.warehousesCount,
+      });
+    });
+  }, []);
 
   const handleDownloadSnapshot = async () => {
     setIsExporting(true);
@@ -126,7 +141,7 @@ export const BackupPage: React.FC = () => {
                   Export Complete Database Snapshot
                 </h3>
                 <p className="text-xs text-slate-400">
-                  Generate an immutable JSON dump of all 3,420 items, tax invoices, customer directories, and movements.
+                  Generate an immutable JSON snapshot of all inventory items, tax invoices, customer directories, and movements.
                 </p>
               </div>
             </div>
@@ -134,15 +149,15 @@ export const BackupPage: React.FC = () => {
             <div className="bg-slate-50 dark:bg-white/[0.02] p-3.5 rounded-xl border border-slate-100 dark:border-white/[0.06] space-y-2 text-xs">
               <div className="flex justify-between text-slate-600 dark:text-slate-300">
                 <span>Inventory Master Items:</span>
-                <strong className="text-slate-900 dark:text-white">3,420 items (Wood 1,248)</strong>
+                <strong className="text-slate-900 dark:text-white">{dbStats.items} SKUs</strong>
               </div>
               <div className="flex justify-between text-slate-600 dark:text-slate-300">
                 <span>Parties & Vendors:</span>
-                <strong className="text-slate-900 dark:text-white">42 Accounts</strong>
+                <strong className="text-slate-900 dark:text-white">{dbStats.parties} Accounts</strong>
               </div>
               <div className="flex justify-between text-slate-600 dark:text-slate-300">
                 <span>Warehouses Included:</span>
-                <strong className="text-slate-900 dark:text-white">4 Regional Hubs</strong>
+                <strong className="text-slate-900 dark:text-white">{dbStats.warehouses} Facilities</strong>
               </div>
               <div className="flex justify-between text-slate-600 dark:text-slate-300">
                 <span>Format:</span>
@@ -260,7 +275,7 @@ export const BackupPage: React.FC = () => {
                 Synced
               </span>
             </div>
-            <p className="text-[11px] text-slate-400">Bhiwandi Central Hub Local Storage RAID-6</p>
+            <p className="text-[11px] text-slate-400">Local Storage & Secondary Snapshot Vault</p>
             <div className="text-[10px] text-slate-500 pt-1 border-t border-slate-200 dark:border-white/[0.06]">
               Schedule: Hourly differential snapshot
             </div>

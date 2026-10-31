@@ -15,30 +15,30 @@ export const OrdersCard: React.FC<OrdersCardProps> = ({ breakdown }) => {
   const overdueItem = breakdown.find((b) => b.status === 'overdue') || {
     status: 'overdue',
     label: 'Overdue',
-    count: 14,
-    percentage: 8,
-    totalAmountINR: 280000,
+    count: 0,
+    percentage: 0,
+    totalAmountINR: 0,
   };
   const returnsItem = breakdown.find((b) => b.status === 'returned') || {
     status: 'returned',
     label: 'Returns',
-    count: 8,
-    percentage: 5,
-    totalAmountINR: 120000,
+    count: 0,
+    percentage: 0,
+    totalAmountINR: 0,
   };
   const inProgressItem = breakdown.find((b) => b.status === 'in_progress') || {
     status: 'in_progress',
     label: 'In Progress',
-    count: 42,
-    percentage: 26,
-    totalAmountINR: 980000,
+    count: 0,
+    percentage: 0,
+    totalAmountINR: 0,
   };
   const completedItem = breakdown.find((b) => b.status === 'completed') || {
     status: 'completed',
     label: 'Completed',
-    count: 156,
-    percentage: 61,
-    totalAmountINR: 3450000,
+    count: 0,
+    percentage: 0,
+    totalAmountINR: 0,
   };
 
   const columns = [
@@ -105,8 +105,8 @@ export const OrdersCard: React.FC<OrdersCardProps> = ({ breakdown }) => {
       {/* 4 Vertical Bars: bleeding off the bottom */}
       <div className="flex-1 grid grid-cols-4 gap-3 px-5 pt-4 items-end relative z-10">
         {columns.map((col) => {
-          // Height proportional to real value (minimum visible height 20%)
-          const heightPct = Math.max(22, Math.round((col.count / maxCount) * 100));
+          // Height proportional to real value (flat base line when 0)
+          const heightPct = col.count === 0 ? 8 : Math.max(20, Math.round((col.count / maxCount) * 100));
 
           return (
             <div
