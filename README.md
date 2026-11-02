@@ -3,13 +3,13 @@
 
 > Enterprise warehouse inventory, GST billing, logistics tracking, and multi-hub distribution system built for Indian wholesale distributors.
 
-[![Live Web App](https://img.shields.io/badge/🌐_OPEN_LIVE_WEBSITE-CLICK_HERE-FF6B35?style=for-the-badge&logo=googlechrome&logoColor=white)](https://shivbiss91-dev.github.io/stock-manager/docs/)
-[![GitHub Pages](https://img.shields.io/badge/GitHub_Pages-Online-emerald?style=for-the-badge&logo=github)](https://shivbiss91-dev.github.io/stock-manager/docs/)
+[![Live Web App](https://img.shields.io/badge/🌐_OPEN_LIVE_WEBSITE-CLICK_HERE-FF6B35?style=for-the-badge&logo=googlechrome&logoColor=white)](https://shivbiss91-dev.github.io/stock-manager/)
+[![GitHub Pages](https://img.shields.io/badge/GitHub_Pages-Online-emerald?style=for-the-badge&logo=github)](https://shivbiss91-dev.github.io/stock-manager/)
 
 ---
 
 ### 🚀 **Open the Application Directly:**
-- 🔗 **Direct Live Link (GitHub Pages):** [**https://shivbiss91-dev.github.io/stock-manager/docs/**](https://shivbiss91-dev.github.io/stock-manager/docs/)
+- 🔗 **Direct Live Link (GitHub Pages):** [**https://shivbiss91-dev.github.io/stock-manager/**](https://shivbiss91-dev.github.io/stock-manager/)
 - 🔗 **Alternative Root Link:** [https://shivbiss91-dev.github.io/stock-manager/](https://shivbiss91-dev.github.io/stock-manager/)
 
 ---
