@@ -31,10 +31,7 @@ export interface UserDashboardLayout {
 }
 
 const DEFAULT_CARD_ORDER = [
-  'orders_card',
-  'stock_donut_card',
-  'order_history_card',
-  'logistics_map_card',
+  'calendar_card',
   'product_table_card',
 ];
 

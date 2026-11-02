@@ -12,6 +12,7 @@ interface AuthStore {
   otpMaskedPhone: string | null;
 
   login: (email: string, passwordHash: string) => Promise<{ requiresOtp: boolean }>;
+  loginDemoAdmin: () => Promise<void>;
   createInitialAdmin: (input: { name: string; email: string; phone: string; password: string }) => Promise<void>;
   verifyOtp: (otpCode: string) => Promise<void>;
   resendOtp: () => Promise<string>;
@@ -61,6 +62,24 @@ export const useAuthStore = create<AuthStore>((set, get) => {
         return { requiresOtp: false };
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Login failed. Please try again.';
+        set({ isLoading: false, error: message });
+        throw err;
+      }
+    },
+
+    loginDemoAdmin: async () => {
+      set({ isLoading: true, error: null });
+      try {
+        const session = await authService.loginDemoAdmin();
+        set({
+          user: session.user,
+          session,
+          isAuthenticated: true,
+          isLoading: false,
+          error: null,
+        });
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Demo login failed.';
         set({ isLoading: false, error: message });
         throw err;
       }

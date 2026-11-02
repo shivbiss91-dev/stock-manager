@@ -189,6 +189,62 @@ export const authService = {
     StorageService.remove(STORAGE_KEYS.SESSION);
   },
 
+  /**
+   * Safe check for whether Demo Admin Login is configured and permitted.
+   * STRICT SAFETY REQUIREMENTS:
+   * 1. Disabled unconditionally in production (import.meta.env.PROD === true)
+   * 2. Disabled unless explicitly enabled via VITE_ENABLE_DEMO_LOGIN === 'true'
+   * 3. Disabled unless valid non-empty demo credentials are provided in local untracked environment
+   */
+  isDemoLoginConfigured(): boolean {
+    if (import.meta.env.PROD) {
+      return false;
+    }
+    const isEnabled = import.meta.env.VITE_ENABLE_DEMO_LOGIN === 'true';
+    if (!isEnabled) {
+      return false;
+    }
+    const email = import.meta.env.VITE_DEMO_ADMIN_EMAIL;
+    const password = import.meta.env.VITE_DEMO_ADMIN_PASSWORD;
+    return Boolean(email && email.trim() && password && password.trim());
+  },
+
+  /**
+   * Secure developer/demo admin login
+   */
+  async loginDemoAdmin(): Promise<AuthSession> {
+    if (!this.isDemoLoginConfigured()) {
+      throw new Error(
+        'Demo Admin Login is disabled in production or not configured with local development credentials.'
+      );
+    }
+
+    const demoEmail = (import.meta.env.VITE_DEMO_ADMIN_EMAIL || 'demo.admin@stockvista.local').trim();
+    const demoUser: User = {
+      id: 'usr-demo-admin-01',
+      name: 'Demo Administrator',
+      email: demoEmail,
+      role: 'admin',
+      roleTitle: 'System Administrator (Demo Session)',
+      phone: '+91 98000 00000',
+      status: 'active',
+      isDemo: true,
+      lastLogin: new Date().toISOString(),
+      warehouseId: 'all',
+      warehouseName: 'All Facilities',
+    };
+
+    const session: AuthSession = {
+      user: demoUser,
+      token: `demo_token_${Date.now()}`,
+      expiresAt: Date.now() + 4 * 60 * 60 * 1000, // 4 hours
+      isDemo: true,
+    };
+
+    StorageService.set(STORAGE_KEYS.SESSION, session);
+    return session;
+  },
+
   async switchRole(role: Role): Promise<User> {
     const session = this.getCurrentSession();
     if (!session || !session.user) {

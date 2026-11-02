@@ -1,132 +1,133 @@
-import { MaterialCategoryInfo } from '../types/inventory';
+import { MaterialCategoryInfo, ProductCategory } from '../types/inventory';
 
-export const MATERIAL_CATEGORIES: MaterialCategoryInfo[] = [
+/**
+ * StockVista Official Product Categories
+ * 
+ * Catalogue restricted strictly to:
+ * 1. Card Holder
+ * 2. Lanyard
+ * 3. Hook
+ * 4. Button Bag
+ * 
+ * Constraint: Do not fabricate prices, HSN, GST rates or stock quantities.
+ */
+export const PRODUCT_CATEGORIES: MaterialCategoryInfo[] = [
   {
-    id: 'wood',
-    name: 'Wood & Timber',
-    description: 'Commercial plywood, marine ply, teak, hardwood, MDF boards, and architectural veneers.',
+    id: 'card_holder' as any,
+    name: 'Card Holder',
+    description: 'Durable ID card holders, clear badge cases, protective sleeves, and clip attachments.',
     subtypes: [
-      'Hardwood',
-      'Softwood',
-      'Plywood',
-      'MDF & Particle Board',
-      'Veneers & Laminates',
+      'Standard Sleeve',
+      'Heavy Duty Case',
+      'Dual Pocket',
+      'Rigid Plastic',
     ],
-    defaultHsn: '441233',
-    defaultGstRate: 18,
-    iconName: 'Trees',
-    imageUrl: 'https://images.unsplash.com/photo-1546484396-fb3fc6f95f98?auto=format&fit=crop&w=600&q=80',
-  },
-  {
-    id: 'metal',
-    name: 'Metals & Alloys',
-    description: 'Structural steel bars, mild steel sheets, aluminium extrusions, copper tubes and brass fittings.',
-    subtypes: [
-      'Structural Steel',
-      'Aluminium Extrusions',
-      'Copper & Brass',
-      'Galvanised Sheets',
-      'Stainless Steel 304/316',
-    ],
-    defaultHsn: '721420',
-    defaultGstRate: 18,
-    iconName: 'Boxes',
-    imageUrl: 'https://images.unsplash.com/photo-1535813547-99c456a41d4a?auto=format&fit=crop&w=600&q=80',
-  },
-  {
-    id: 'plastic',
-    name: 'Polymers & Plastics',
-    description: 'HDPE granules, acrylic sheets, PVC pipes, polypropylene rolls, and industrial polycarbonates.',
-    subtypes: [
-      'HDPE & LDPE',
-      'Acrylic Sheets',
-      'PVC & CPVC',
-      'Polycarbonate',
-      'Polypropylene',
-    ],
-    defaultHsn: '390120',
-    defaultGstRate: 18,
+    defaultHsn: '',
+    defaultGstRate: 0,
     iconName: 'Layers',
-    imageUrl: 'https://images.unsplash.com/photo-1605559424843-9e4c228bf1c2?auto=format&fit=crop&w=600&q=80',
+    imageUrl: '/products/card-holder.svg',
   },
   {
-    id: 'glass',
-    name: 'Glass & Silica',
-    description: 'Toughened glass, float glass, laminated safety glass, frosted panels, and reflective mirrors.',
+    id: 'lanyard' as any,
+    name: 'Lanyard',
+    description: 'Custom and plain woven neck lanyards, safety breakaway straps, and badge ribbons.',
     subtypes: [
-      'Toughened Architectural',
-      'Float Glass (Clear/Tinted)',
-      'Laminated Safety Glass',
-      'Frosted & Decorative',
-      'Insulated Glass Units',
+      'Standard Polyester',
+      'Satin Finish',
+      'Safety Breakaway',
+      'Double Ended',
     ],
-    defaultHsn: '700529',
-    defaultGstRate: 18,
-    iconName: 'Shield',
-    imageUrl: 'https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=600&q=80',
-  },
-  {
-    id: 'fabric',
-    name: 'Industrial Fabrics',
-    description: 'Heavy cotton canvas, tarpaulin rolls, geotextiles, upholstery linen, and nylon webbing.',
-    subtypes: [
-      'Cotton Canvas & Duck',
-      'Heavy Duty Tarpaulin',
-      'Geotextiles & Filter Cloth',
-      'Upholstery Linens',
-      'Nylon & Polyester Webbing',
-    ],
-    defaultHsn: '520842',
-    defaultGstRate: 12,
+    defaultHsn: '',
+    defaultGstRate: 0,
     iconName: 'Shirt',
-    imageUrl: 'https://images.unsplash.com/photo-1528458876885-b77824987f25?auto=format&fit=crop&w=600&q=80',
+    imageUrl: '/products/lanyard.svg',
   },
   {
-    id: 'rubber',
-    name: 'Rubber & Elastomers',
-    description: 'Neoprene sheets, EPDM conveyor belts, silicone gaskets, natural rubber crumb, and nitrile rolls.',
+    id: 'hook' as any,
+    name: 'Hook',
+    description: 'Metal swivel snap hooks, alligator clips, lobster clasps, and keyrings.',
     subtypes: [
-      'Neoprene & SBR Sheets',
-      'Conveyor Belting',
-      'Nitrile & EPDM Gaskets',
-      'Silicone Elastomers',
-      'Natural Rubber Sheeting',
+      'Fish Hook / Lobster',
+      'Dog Hook',
+      'Alligator Clip',
+      'Trigger Hook',
     ],
-    defaultHsn: '400821',
-    defaultGstRate: 18,
-    iconName: 'Disc',
-    imageUrl: 'https://images.unsplash.com/photo-1578844251758-2f71da64c96f?auto=format&fit=crop&w=600&q=80',
+    defaultHsn: '',
+    defaultGstRate: 0,
+    iconName: 'Boxes',
+    imageUrl: '/products/hook.svg',
   },
   {
-    id: 'paper',
-    name: 'Paper & Packaging',
-    description: 'Kraft paper reels, duplex boards, corrugated rolls, parchment, and honeycomb packing materials.',
+    id: 'button_bag' as any,
+    name: 'Button Bag',
+    description: 'Snap-button pouches, clear document envelopes, and transparent organizers.',
     subtypes: [
-      'Virgin Kraft Paper',
-      'Duplex Packaging Boards',
-      'Corrugated Fluting Medium',
-      'Grey Board & Bookbinding',
-      'Honeycomb Core Sheets',
+      'Snap Button Pouch',
+      'Zipper Pouch',
+      'Gusset Pouch',
+      'Document Sleeve',
     ],
-    defaultHsn: '480411',
-    defaultGstRate: 12,
-    iconName: 'FileText',
-    imageUrl: 'https://images.unsplash.com/photo-1603484477859-abe6a73f9366?auto=format&fit=crop&w=600&q=80',
-  },
-  {
-    id: 'ceramic',
-    name: 'Ceramics & Minerals',
-    description: 'Vitrified tiles, refractory bricks, quartz slabs, sanitaryware ceramics, and porcelain slabs.',
-    subtypes: [
-      'Vitrified Floor Tiles',
-      'Refractory Fire Bricks',
-      'Engineered Quartz Slabs',
-      'Ceramic Wall Panels',
-      'High Alumina Insulators',
-    ],
-    defaultHsn: '690721',
-    defaultGstRate: 18,
-    iconName: 'Grid',
-    imageUrl: 'https://images.unsplash.com/photo-1590381105924-c72589b9ef3f?auto=format&fit=crop&w=600&q=80',
+    defaultHsn: '',
+    defaultGstRate: 0,
+    iconName: 'Shield',
+    imageUrl: '/products/button-bag.svg',
   },
 ];
+
+// Alias for backwards-compatibility with services
+export const MATERIAL_CATEGORIES: MaterialCategoryInfo[] = PRODUCT_CATEGORIES;
+
+export const CATEGORY_DISPLAY_NAMES: Record<string, string> = {
+  card_holder: 'Card Holder',
+  lanyard: 'Lanyard',
+  hook: 'Hook',
+  button_bag: 'Button Bag',
+};
+
+/**
+ * Returns clean human-readable name for a product category
+ */
+export function formatCategoryName(category: string): string {
+  if (!category) return '';
+  if (CATEGORY_DISPLAY_NAMES[category]) {
+    return CATEGORY_DISPLAY_NAMES[category];
+  }
+  // Safe mapping for legacy category names
+  const lower = category.toLowerCase();
+  if (lower.includes('card') || lower.includes('holder')) return 'Card Holder';
+  if (lower.includes('lanyard') || lower.includes('strap')) return 'Lanyard';
+  if (lower.includes('hook') || lower.includes('clasp')) return 'Hook';
+  if (lower.includes('button') || lower.includes('bag') || lower.includes('pouch')) return 'Button Bag';
+
+  return category.charAt(0).toUpperCase() + category.slice(1).replace(/_/g, ' ');
+}
+
+/**
+ * Safely maps any item category string to one of the 4 approved categories
+ */
+export function migrateProductCategory(category: string, name?: string, sku?: string): ProductCategory {
+  const c = (category || '').toLowerCase();
+  const n = (name || '').toLowerCase();
+  const s = (sku || '').toLowerCase();
+
+  if (c === 'card_holder' || n.includes('card holder') || s.startsWith('ch-')) {
+    return 'card_holder';
+  }
+  if (c === 'lanyard' || n.includes('lanyard') || s.startsWith('lan-')) {
+    return 'lanyard';
+  }
+  if (c === 'hook' || n.includes('hook') || s.startsWith('hk-')) {
+    return 'hook';
+  }
+  if (c === 'button_bag' || n.includes('button bag') || s.startsWith('bb-')) {
+    return 'button_bag';
+  }
+
+  // Legacy fallback based on keywords
+  if (n.includes('card') || c === 'plastic') return 'card_holder';
+  if (n.includes('lanyard') || c === 'fabric') return 'lanyard';
+  if (n.includes('hook') || c === 'metal') return 'hook';
+  if (n.includes('bag')) return 'button_bag';
+
+  return 'card_holder';
+}

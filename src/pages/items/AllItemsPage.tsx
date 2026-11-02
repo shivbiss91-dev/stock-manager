@@ -12,11 +12,13 @@ import {
   Printer,
   ArrowRightLeft,
   Edit,
+  Trash2,
 } from 'lucide-react';
 import { inventoryService } from '../../services/inventoryService';
 import { ComputedInventoryItem, MaterialCategory } from '../../types/inventory';
 import { StockStatus } from '../../types/common';
 import { formatINR } from '../../utils/formatINR';
+import { formatCategoryName } from '../../data/materialCategories';
 import { AddItemModal } from '../../components/dashboard/AddItemModal';
 import { BarcodeLabelModal } from '../../components/itemDetail/BarcodeLabelModal';
 import { TransferStockModal } from '../../components/itemDetail/TransferStockModal';
@@ -55,6 +57,43 @@ export const AllItemsPage: React.FC = () => {
   const [selectedItemForTransfer, setSelectedItemForTransfer] = useState<ComputedInventoryItem | null>(null);
   const [adjustmentItem, setAdjustmentItem] = useState<ComputedInventoryItem | null>(null);
   const [adjustmentMode, setAdjustmentMode] = useState<'add' | 'deduct' | 'direct'>('add');
+  const [itemToDelete, setItemToDelete] = useState<ComputedInventoryItem | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const reloadItems = async () => {
+    setIsLoading(true);
+    try {
+      const res = await inventoryService.getItems({
+        page,
+        pageSize: 20,
+        search: searchParam || undefined,
+        category: categoryParam !== 'all' ? categoryParam : undefined,
+        stockStatus: statusParam !== 'all' ? statusParam : undefined,
+      });
+      setItems(res.items);
+      setTotalCount(res.totalCount);
+      setTotalPages(res.totalPages);
+      setStatusCounts(res.statusCounts);
+    } catch (err) {
+      console.error('Failed to reload items:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDeleteConfirmed = async () => {
+    if (!itemToDelete) return;
+    setIsDeleting(true);
+    try {
+      await inventoryService.deleteItem(itemToDelete.id);
+      await reloadItems();
+      setItemToDelete(null);
+    } catch (err) {
+      console.error('Failed to delete item:', err);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   // Load items
   useEffect(() => {
@@ -206,15 +245,11 @@ export const AllItemsPage: React.FC = () => {
               onChange={(e) => handleCategoryChange(e.target.value)}
               className="w-full px-3 py-2 text-xs sm:text-sm bg-slate-50 dark:bg-[#1A1D26] border border-slate-200 dark:border-white/[0.08] rounded-xl text-slate-900 dark:text-[#F2F4F8] focus:outline-none focus:ring-2 focus:ring-brand-orange capitalize"
             >
-              <option value="all">All Material Categories</option>
-              <option value="wood">Wood</option>
-              <option value="metal">Metal</option>
-              <option value="plastic">Plastic</option>
-              <option value="glass">Glass</option>
-              <option value="fabric">Fabric</option>
-              <option value="rubber">Rubber</option>
-              <option value="paper">Paper</option>
-              <option value="ceramic">Ceramic</option>
+              <option value="all">All Product Categories</option>
+              <option value="card_holder">Card Holder</option>
+              <option value="lanyard">Lanyard</option>
+              <option value="hook">Hook</option>
+              <option value="button_bag">Button Bag</option>
             </select>
           </div>
         </div>
@@ -258,7 +293,6 @@ export const AllItemsPage: React.FC = () => {
               <tr>
                 <th className="py-3 px-4 font-semibold">Product Description</th>
                 <th className="py-3 px-3 font-semibold">SKU / HSN</th>
-                <th className="py-3 px-3 font-semibold">Location</th>
                 <th className="py-3 px-3 font-semibold text-right">Price (₹)</th>
                 <th className="py-3 px-3 font-semibold text-right">Available Stock</th>
                 <th className="py-3 px-3 font-semibold text-center">Status</th>
@@ -269,7 +303,7 @@ export const AllItemsPage: React.FC = () => {
               {isLoading ? (
                 Array.from({ length: 8 }).map((_, i) => (
                   <tr key={i} className="animate-pulse">
-                    <td colSpan={7} className="py-3.5 px-4">
+                    <td colSpan={6} className="py-3.5 px-4">
                       <div className="h-4 bg-slate-100 dark:bg-white/[0.05] rounded w-full"></div>
                     </td>
                   </tr>
@@ -293,7 +327,7 @@ export const AllItemsPage: React.FC = () => {
                             {item.name}
                           </Link>
                           <div className="flex items-center gap-1.5 text-[11px] text-slate-400 capitalize">
-                            <span>{item.materialCategory}</span>
+                            <span>{formatCategoryName(item.materialCategory)}</span>
                             <span>•</span>
                             <span>{item.materialSubtype}</span>
                           </div>
@@ -307,17 +341,7 @@ export const AllItemsPage: React.FC = () => {
                         {item.sku}
                       </span>
                       <span className="text-[10px] text-slate-400 font-mono">
-                        HSN {item.hsnCode}
-                      </span>
-                    </td>
-
-                    {/* Storage Location */}
-                    <td className="py-3 px-3">
-                      <span className="font-medium text-slate-800 dark:text-[#F2F4F8] block truncate max-w-[140px]">
-                        {item.warehouseName.split(' ')[0]} Hub
-                      </span>
-                      <span className="text-[10px] text-slate-400 font-mono">
-                        {item.rackLocation}
+                        {item.hsnCode ? `HSN ${item.hsnCode}` : 'HSN Unset'}
                       </span>
                     </td>
 
@@ -429,13 +453,20 @@ export const AllItemsPage: React.FC = () => {
                         >
                           <Printer className="w-4 h-4" />
                         </button>
+                        <button
+                          onClick={() => setItemToDelete(item)}
+                          className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition"
+                          title="Delete Product"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       </div>
                     </td>
                   </tr>
                 ))
               ) : totalCount === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-16 text-center">
+                  <td colSpan={6} className="py-16 text-center">
                     <div className="max-w-md mx-auto flex flex-col items-center justify-center space-y-3">
                       <div className="w-14 h-14 rounded-2xl bg-brand-orange/10 text-brand-orange flex items-center justify-center">
                         <Package className="w-7 h-7" strokeWidth={1.5} />
@@ -458,7 +489,7 @@ export const AllItemsPage: React.FC = () => {
                 </tr>
               ) : (
                 <tr>
-                  <td colSpan={7} className="py-12 text-center text-slate-400 space-y-2">
+                  <td colSpan={6} className="py-12 text-center text-slate-400 space-y-2">
                     <Package className="w-8 h-8 mx-auto text-slate-400" />
                     <p className="font-semibold text-slate-600 dark:text-slate-300">No items match your criteria</p>
                     <p className="text-xs">Try resetting the filters or modifying your search terms.</p>
@@ -541,6 +572,44 @@ export const AllItemsPage: React.FC = () => {
             inventoryService.getItems({ page, pageSize: 20 }).then((res) => setItems(res.items));
           }}
         />
+      )}
+
+      {/* Delete Item Confirmation Modal */}
+      {itemToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#05060A]/80 backdrop-blur-md animate-fade-in">
+          <div className="w-full max-w-md template-card border border-red-500/30 rounded-[24px] shadow-2xl p-6 space-y-4">
+            <div className="flex items-center gap-3 text-red-500">
+              <div className="p-3 rounded-xl bg-red-500/10">
+                <Trash2 className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-slate-900 dark:text-white">Delete Product</h3>
+                <p className="text-xs text-slate-500 dark:text-[#9AA0AE]">This action cannot be undone</p>
+              </div>
+            </div>
+            <p className="text-sm text-slate-700 dark:text-slate-300">
+              Are you sure you want to permanently delete <strong>{itemToDelete.name}</strong> ({itemToDelete.sku}) from your inventory?
+            </p>
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-200 dark:border-white/10">
+              <button
+                type="button"
+                onClick={() => setItemToDelete(null)}
+                disabled={isDeleting}
+                className="px-4 py-2 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/10 rounded-xl"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteConfirmed}
+                disabled={isDeleting}
+                className="px-4 py-2 text-xs font-bold text-white bg-red-600 hover:bg-red-700 rounded-xl shadow-sm flex items-center gap-1.5"
+              >
+                {isDeleting ? 'Deleting...' : 'Yes, Delete Product'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

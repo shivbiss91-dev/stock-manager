@@ -401,6 +401,26 @@ export const inventoryService = {
     return itemsDatabase.filter((i) => i.materialCategory === category).length;
   },
 
+  async deleteItem(itemId: string): Promise<boolean> {
+    await new Promise((res) => setTimeout(res, 40));
+    const itemsDatabase = getStoredItems();
+    const index = itemsDatabase.findIndex((i) => i.id === itemId);
+    if (index === -1) return false;
+    itemsDatabase.splice(index, 1);
+    saveStoredItems(itemsDatabase);
+    return true;
+  },
+
+  async deleteItems(itemIds: string[]): Promise<boolean> {
+    await new Promise((res) => setTimeout(res, 40));
+    const idSet = new Set(itemIds);
+    let itemsDatabase = getStoredItems();
+    const originalCount = itemsDatabase.length;
+    itemsDatabase = itemsDatabase.filter((i) => !idSet.has(i.id));
+    saveStoredItems(itemsDatabase);
+    return itemsDatabase.length < originalCount;
+  },
+
   async getAllItems(): Promise<ComputedInventoryItem[]> {
     await new Promise((res) => setTimeout(res, 20));
     const itemsDatabase = getStoredItems();

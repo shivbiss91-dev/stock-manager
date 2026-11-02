@@ -92,9 +92,12 @@ export const ItemCard: React.FC<ItemCardProps> = ({
           />
 
           <img
-            src={item.images[0]}
+            src={item.images[0] || '/products/card-holder.svg'}
             alt={item.name}
             className="w-12 h-12 rounded-xl object-cover flex-shrink-0 bg-slate-100 dark:bg-white/[0.05]"
+            onError={(e) => {
+              (e.currentTarget as HTMLImageElement).src = '/products/card-holder.svg';
+            }}
           />
 
           <div className="min-w-0">
@@ -114,9 +117,9 @@ export const ItemCard: React.FC<ItemCardProps> = ({
               {item.name}
             </h4>
             <div className="flex items-center gap-3 text-[11px] text-slate-400 mt-0.5">
-              <span>HSN: {item.hsnCode}</span>
+              <span>HSN: {item.hsnCode || 'Unset'}</span>
               <span>•</span>
-              <span>Rack: {item.rackLocation}</span>
+              <span>Rack: {item.rackLocation || 'Unassigned'}</span>
             </div>
           </div>
         </div>
@@ -183,9 +186,12 @@ export const ItemCard: React.FC<ItemCardProps> = ({
       {/* Thumbnail Header with Overlays */}
       <div className="relative h-40 w-full overflow-hidden bg-slate-900">
         <img
-          src={item.images[0]}
+          src={item.images[0] || '/products/card-holder.svg'}
           alt={item.name}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+          onError={(e) => {
+            (e.currentTarget as HTMLImageElement).src = '/products/card-holder.svg';
+          }}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-black/30" />
 

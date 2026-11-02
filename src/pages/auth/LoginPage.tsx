@@ -47,23 +47,35 @@ type SetupFormData = z.infer<typeof setupSchema>;
 export const LoginPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { login, createInitialAdmin, isLoading, error, clearError, otpPendingEmail } = useAuthStore();
+  const { login, loginDemoAdmin, createInitialAdmin, isLoading, error, clearError, otpPendingEmail } = useAuthStore();
   const [showOtpModal, setShowOtpModal] = useState(false);
   const [showForgotModal, setShowForgotModal] = useState(false);
   const [isFreshInstall, setIsFreshInstall] = useState<boolean | null>(null);
+  const [isDemoAvailable, setIsDemoAvailable] = useState(false);
 
-  // Check if system has any registered accounts
+  // Check if system has any registered accounts and demo mode availability
   useEffect(() => {
     let isMounted = true;
     authService.hasUsers().then((has) => {
       if (isMounted) {
         setIsFreshInstall(!has);
+        setIsDemoAvailable(authService.isDemoLoginConfigured());
       }
     });
     return () => {
       isMounted = false;
     };
   }, []);
+
+  const handleDemoLogin = async () => {
+    clearError();
+    try {
+      await loginDemoAdmin();
+      navigate(from, { replace: true });
+    } catch {
+      // Handled in authStore
+    }
+  };
 
   const loginForm = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
@@ -332,6 +344,35 @@ export const LoginPage: React.FC = () => {
                   Sign In to StockVista
                 </Button>
               </form>
+            </div>
+          )}
+
+          {/* Explicitly Enabled Demo Admin Login (Available strictly in Development/Demo Mode) */}
+          {isDemoAvailable && (
+            <div className="pt-4 border-t border-slate-200 dark:border-white/[0.08] space-y-3">
+              <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-xs space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-amber-500 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5" />
+                    Demo / Development Mode
+                  </span>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-500 font-semibold">
+                    Non-Production
+                  </span>
+                </div>
+                <p className="text-slate-600 dark:text-slate-300 text-[11px] leading-relaxed">
+                  Demo credentials configured via local environment. This session operates strictly against sandboxed storage and cannot access real production data.
+                </p>
+                <button
+                  type="button"
+                  onClick={handleDemoLogin}
+                  disabled={isLoading}
+                  className="w-full py-2.5 px-3 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <ShieldCheck className="w-4 h-4" />
+                  <span>Demo Admin Login</span>
+                </button>
+              </div>
             </div>
           )}
         </div>

@@ -35,11 +35,11 @@ const QUICK_SEARCH_ITEMS: SearchItem[] = [
   },
   {
     id: 's-2',
-    title: 'Wood & Timber Materials (1,248 Items)',
-    subtitle: 'Hardwood, Plywood, Teak, MDF & Veneers catalogue',
-    category: 'Material',
-    path: '/materials/wood',
-    icon: <Layers className="w-4 h-4 text-amber-500" />,
+    title: 'Items & Products Catalogue',
+    subtitle: 'Wholesale product catalogue, SKUs, inventory and prices',
+    category: 'Page',
+    path: '/items',
+    icon: <Package className="w-4 h-4 text-brand-orange" />,
   },
   {
     id: 's-3',

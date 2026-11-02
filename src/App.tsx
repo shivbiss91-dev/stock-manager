@@ -4,9 +4,6 @@ import { AppLayout } from './components/shell/AppLayout';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { LoginPage } from './pages/auth/LoginPage';
 import { DashboardPage } from './pages/dashboard/DashboardPage';
-import { MaterialsPage } from './pages/materials/MaterialsPage';
-import { MaterialCategoryPage } from './pages/materials/MaterialCategoryPage';
-import { FavouritesPage } from './pages/materials/FavouritesPage';
 import { AllItemsPage } from './pages/items/AllItemsPage';
 import { ItemDetailPage } from './pages/items/ItemDetailPage';
 import { StockMovementsPage } from './pages/items/StockMovementsPage';
@@ -25,7 +22,6 @@ import { SuppliersPage } from './pages/parties/SuppliersPage';
 import { ReportsPage } from './pages/reports/ReportsPage';
 import { DocumentsPage } from './pages/documents/DocumentsPage';
 import { ApprovalsPage } from './pages/approvals/ApprovalsPage';
-import { AuditLogPage } from './pages/audit/AuditLogPage';
 import { UsersPage } from './pages/users/UsersPage';
 import { BackupPage } from './pages/backup/BackupPage';
 import { SettingsPage } from './pages/settings/SettingsPage';
@@ -48,14 +44,10 @@ export const App: React.FC = () => {
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="/dashboard" element={<DashboardPage />} />
 
-          {/* Materials & Category Routes (Phase 3) */}
-          <Route path="/materials" element={<MaterialsPage />} />
-          <Route path="/materials/:materialId" element={<MaterialCategoryPage />} />
-          <Route path="/favourites" element={<FavouritesPage />} />
-
-          {/* Item Detail Routes (Phase 4) */}
+          {/* Item & Product Routes */}
           <Route path="/items" element={<AllItemsPage />} />
           <Route path="/items/:itemId" element={<ItemDetailPage />} />
+          <Route path="/materials" element={<Navigate to="/items" replace />} />
 
           {/* Warehouses & Movements */}
           <Route path="/warehouses" element={<WarehousesPage />} />
@@ -166,16 +158,6 @@ export const App: React.FC = () => {
             element={
               <ProtectedRoute allowedRoles={['admin', 'manager']}>
                 <ApprovalsPage />
-              </ProtectedRoute>
-            }
-          />
-
-          {/* Audit Log (Phase 7 - Admin only) */}
-          <Route
-            path="/audit-log"
-            element={
-              <ProtectedRoute allowedRoles={['admin']}>
-                <AuditLogPage />
               </ProtectedRoute>
             }
           />

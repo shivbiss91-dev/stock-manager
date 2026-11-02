@@ -12,12 +12,14 @@ export interface User {
   warehouseName?: string;
   lastLogin?: string;
   status: 'active' | 'suspended';
+  isDemo?: boolean;
 }
 
 export interface AuthSession {
   user: User;
   token: string;
   expiresAt: number;
+  isDemo?: boolean;
 }
 
 export type PermissionAction =

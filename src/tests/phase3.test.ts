@@ -8,39 +8,28 @@ describe('Phase 3: Materials Categories Home', () => {
   beforeAll(() => {
     inventoryService._seedInventoryForTesting(MASTER_INVENTORY);
   });
-  it('returns all 8 primary material categories', async () => {
+  it('returns all 4 primary product categories', async () => {
     const categories = await materialsService.getCategories('all');
-    expect(categories.length).toBe(8);
+    expect(categories.length).toBe(4);
 
     const categoryIds = categories.map((c) => c.id);
-    expect(categoryIds).toContain('wood');
-    expect(categoryIds).toContain('metal');
-    expect(categoryIds).toContain('plastic');
-    expect(categoryIds).toContain('glass');
-    expect(categoryIds).toContain('fabric');
-    expect(categoryIds).toContain('rubber');
-    expect(categoryIds).toContain('paper');
-    expect(categoryIds).toContain('ceramic');
-  });
-
-  it('reports exactly 1,248 items for Wood category', async () => {
-    const categories = await materialsService.getCategories('all');
-    const wood = categories.find((c) => c.id === 'wood');
-    expect(wood).toBeDefined();
-    expect(wood?.itemCount).toBe(1248);
+    expect(categoryIds).toContain('card_holder');
+    expect(categoryIds).toContain('lanyard');
+    expect(categoryIds).toContain('hook');
+    expect(categoryIds).toContain('button_bag');
   });
 
   it('allows admin to edit category name', async () => {
     const updated = await materialsService.updateCategoryName(
-      'wood',
-      'Architectural Wood & Timber'
+      'card_holder' as any,
+      'Premium Card Holder'
     );
-    expect(updated.name).toBe('Architectural Wood & Timber');
+    expect(updated.name).toBe('Premium Card Holder');
 
     // Reset back
-    await materialsService.updateCategoryName('wood', 'Wood & Timber');
-    const reset = await materialsService.getCategoryById('wood');
-    expect(reset?.name).toBe('Wood & Timber');
+    await materialsService.updateCategoryName('card_holder' as any, 'Card Holder');
+    const reset = await materialsService.getCategoryById('card_holder' as any);
+    expect(reset?.name).toBe('Card Holder');
   });
 });
 

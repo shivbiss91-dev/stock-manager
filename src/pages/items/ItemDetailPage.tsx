@@ -32,6 +32,7 @@ import {
   Plus,
   Minus,
   Sliders,
+  Trash2,
 } from 'lucide-react';
 import { QuickStockAdjustmentModal } from '../../components/dashboard/QuickStockAdjustmentModal';
 import { formatPackagingBreakdown } from '../../utils/unitConversions';
@@ -60,6 +61,7 @@ import {
 } from '../../types/itemDetail';
 import { useAuthStore } from '../../store/authStore';
 import { formatINR } from '../../utils/formatINR';
+import { formatCategoryName } from '../../data/materialCategories';
 import { formatDate } from '../../utils/dateUtils';
 import { EditItemModal } from '../../components/itemDetail/EditItemModal';
 import { TransferStockModal } from '../../components/itemDetail/TransferStockModal';
@@ -106,7 +108,28 @@ export const ItemDetailPage: React.FC = () => {
   const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
   const [isLabelModalOpen, setIsLabelModalOpen] = useState(false);
   const [isAdjustmentModalOpen, setIsAdjustmentModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [adjustmentMode, setAdjustmentMode] = useState<'add' | 'deduct' | 'direct'>('add');
+
+  const handleDeleteItem = async () => {
+    if (!item) return;
+    setIsDeleting(true);
+    try {
+      await inventoryService.deleteItem(item.id);
+      addNotification({
+        title: 'Item Deleted',
+        message: `${item.name} (${item.sku}) was deleted from the catalogue.`,
+        type: 'info',
+      });
+      navigate('/items');
+    } catch (err) {
+      console.error('Failed to delete item:', err);
+    } finally {
+      setIsDeleting(false);
+      setIsDeleteModalOpen(false);
+    }
+  };
 
   const handleAdjustmentSuccess = async () => {
     if (!itemId) return;
@@ -230,11 +253,11 @@ export const ItemDetailPage: React.FC = () => {
           The item identifier <code className="font-mono text-primary-500">{itemId}</code> was not found in the inventory ledger.
         </p>
         <Link
-          to="/materials"
+          to="/items"
           className="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-xl text-sm font-medium hover:bg-primary-700 transition"
         >
           <ArrowLeft className="w-4 h-4" />
-          <span>Return to Materials</span>
+          <span>Return to Items & Products</span>
         </Link>
       </div>
     );
@@ -249,15 +272,15 @@ export const ItemDetailPage: React.FC = () => {
             Dashboard
           </Link>
           <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
-          <Link to="/materials" className="hover:text-primary-600 dark:hover:text-accent-teal transition-colors">
-            Materials
+          <Link to="/items" className="hover:text-primary-600 dark:hover:text-accent-teal transition-colors">
+            Items & Products
           </Link>
           <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
           <Link
-            to={`/materials/${item.materialCategory}`}
+            to={`/items?category=${item.materialCategory}`}
             className="capitalize hover:text-primary-600 dark:hover:text-accent-teal transition-colors"
           >
-            {item.materialCategory}
+            {formatCategoryName(item.materialCategory)}
           </Link>
           <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
           <span className="font-semibold text-slate-800 dark:text-white truncate max-w-[200px] sm:max-w-xs">
@@ -328,6 +351,16 @@ export const ItemDetailPage: React.FC = () => {
             <Receipt className="w-4 h-4" />
             <span>Generate Bill</span>
           </button>
+
+          {/* Delete Item button */}
+          <button
+            onClick={() => setIsDeleteModalOpen(true)}
+            className="px-3.5 py-2 text-xs sm:text-sm font-medium rounded-xl border border-red-500/20 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white transition flex items-center gap-1.5"
+            title="Delete this product from catalog"
+          >
+            <Trash2 className="w-4 h-4" />
+            <span>Delete</span>
+          </button>
         </div>
       </div>
 
@@ -348,7 +381,7 @@ export const ItemDetailPage: React.FC = () => {
             {/* Category Chip */}
             <div className="absolute top-3 left-3 flex items-center gap-2">
               <span className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-black/60 backdrop-blur-md text-white capitalize border border-white/20">
-                {item.materialCategory} • {item.materialSubtype}
+                {formatCategoryName(item.materialCategory)}
               </span>
             </div>
 
@@ -387,17 +420,21 @@ export const ItemDetailPage: React.FC = () => {
           {/* Quick Specifications list */}
           <div className="pt-3 border-t border-slate-100 dark:border-white/[0.06] text-xs text-slate-500 dark:text-slate-400 space-y-1.5">
             <div className="flex justify-between">
-              <span>Barcode (EAN-13):</span>
-              <span className="font-mono text-slate-700 dark:text-slate-200">{item.barcode}</span>
+              <span>Unit of Measure:</span>
+              <span className="font-semibold text-slate-800 dark:text-slate-200">{item.unit}</span>
             </div>
-            <div className="flex justify-between">
-              <span>HSN Classification:</span>
-              <span className="font-mono font-medium text-slate-800 dark:text-slate-200">{item.hsnCode}</span>
-            </div>
-            <div className="flex justify-between">
-              <span>GST Tax Slab:</span>
-              <span className="font-semibold text-accent-orange">{item.gstRate}%</span>
-            </div>
+            {item.hsnCode ? (
+              <div className="flex justify-between">
+                <span>HSN Classification:</span>
+                <span className="font-mono font-medium text-slate-800 dark:text-slate-200">{item.hsnCode}</span>
+              </div>
+            ) : null}
+            {item.gstRate > 0 ? (
+              <div className="flex justify-between">
+                <span>GST Tax Slab:</span>
+                <span className="font-semibold text-accent-orange">{item.gstRate}%</span>
+              </div>
+            ) : null}
           </div>
         </div>
 
@@ -557,8 +594,10 @@ export const ItemDetailPage: React.FC = () => {
               <MapPin className="w-4 h-4 text-accent-orange mt-0.5 flex-shrink-0" />
               <div>
                 <p className="font-semibold text-slate-800 dark:text-slate-200">Storage Location</p>
-                <p className="text-slate-600 dark:text-slate-400 mt-0.5">{item.warehouseName}</p>
-                <p className="text-[11px] font-mono text-slate-400">{item.rackLocation}</p>
+                <p className="text-slate-600 dark:text-slate-400 mt-0.5">
+                  {item.warehouseName && item.warehouseName !== 'Unassigned' ? item.warehouseName : 'Unassigned (Configure in Edit)'}
+                </p>
+                <p className="text-[11px] font-mono text-slate-400">{item.rackLocation || 'Rack not assigned'}</p>
               </div>
             </div>
 
@@ -566,8 +605,10 @@ export const ItemDetailPage: React.FC = () => {
               <Building2 className="w-4 h-4 text-accent-blue mt-0.5 flex-shrink-0" />
               <div>
                 <p className="font-semibold text-slate-800 dark:text-slate-200">Wholesale Supplier</p>
-                <p className="text-slate-600 dark:text-slate-400 mt-0.5">{item.supplierName}</p>
-                <p className="text-[11px] text-slate-400">ID: {item.supplierId}</p>
+                <p className="text-slate-600 dark:text-slate-400 mt-0.5">
+                  {item.supplierName && item.supplierName !== 'Unassigned' ? item.supplierName : 'Unassigned'}
+                </p>
+                <p className="text-[11px] text-slate-400">{item.supplierId ? `ID: ${item.supplierId}` : 'No supplier linked'}</p>
               </div>
             </div>
           </div>
@@ -950,9 +991,9 @@ export const ItemDetailPage: React.FC = () => {
 
                 <div className="divide-y divide-slate-100 dark:divide-white/[0.06] text-xs">
                   <div className="py-2 flex justify-between">
-                    <span className="text-slate-500">Material Category</span>
+                    <span className="text-slate-500">Product Category</span>
                     <span className="font-semibold capitalize text-slate-800 dark:text-slate-200">
-                      {item.materialCategory}
+                      {formatCategoryName(item.materialCategory)}
                     </span>
                   </div>
                   <div className="py-2 flex justify-between">
@@ -1273,7 +1314,46 @@ export const ItemDetailPage: React.FC = () => {
           isOpen={isEditModalOpen}
           onClose={() => setIsEditModalOpen(false)}
           onItemUpdated={(updated) => setItem(updated)}
+          onItemDeleted={() => navigate('/items')}
         />
+      )}
+
+      {/* Direct Delete Confirmation Modal */}
+      {isDeleteModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#05060A]/80 backdrop-blur-md animate-fade-in">
+          <div className="w-full max-w-md template-card border border-red-500/30 rounded-[24px] shadow-2xl p-6 space-y-4">
+            <div className="flex items-center gap-3 text-red-500">
+              <div className="p-3 rounded-xl bg-red-500/10">
+                <Trash2 className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-slate-900 dark:text-white">Delete Product</h3>
+                <p className="text-xs text-slate-500 dark:text-[#9AA0AE]">This action cannot be undone</p>
+              </div>
+            </div>
+            <p className="text-sm text-slate-700 dark:text-slate-300">
+              Are you sure you want to permanently delete <strong>{item?.name}</strong> ({item?.sku}) from the catalogue?
+            </p>
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-200 dark:border-white/10">
+              <button
+                type="button"
+                onClick={() => setIsDeleteModalOpen(false)}
+                disabled={isDeleting}
+                className="px-4 py-2 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/10 rounded-xl"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteItem}
+                disabled={isDeleting}
+                className="px-4 py-2 text-xs font-bold text-white bg-red-600 hover:bg-red-700 rounded-xl shadow-sm flex items-center gap-1.5"
+              >
+                {isDeleting ? 'Deleting...' : 'Yes, Delete Product'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {isTransferModalOpen && (

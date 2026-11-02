@@ -4,7 +4,6 @@ import { ChevronRight, Home } from 'lucide-react';
 
 const ROUTE_LABELS: Record<string, string> = {
   dashboard: 'Dashboard',
-  materials: 'Materials',
   items: 'Items & Products',
   warehouses: 'Warehouses',
   'stock-movements': 'Stock Movements',
@@ -24,19 +23,13 @@ const ROUTE_LABELS: Record<string, string> = {
   reports: 'Reports & Analytics',
   documents: 'Documents',
   approvals: 'Approvals',
-  'audit-log': 'Audit Log',
   'users-roles': 'Users & Roles',
   settings: 'Settings',
-  favourites: 'Favourites',
   backup: 'Data Backup',
-  wood: 'Wood & Timber',
-  metal: 'Metals & Alloys',
-  plastic: 'Polymers & Plastics',
-  glass: 'Glass & Silica',
-  fabric: 'Industrial Fabrics',
-  rubber: 'Rubber & Elastomers',
-  paper: 'Paper & Packaging',
-  ceramic: 'Ceramics & Minerals',
+  card_holder: 'Card Holder',
+  lanyard: 'Lanyard',
+  hook: 'Hook',
+  button_bag: 'Button Bag',
 };
 
 export const Breadcrumbs: React.FC = () => {

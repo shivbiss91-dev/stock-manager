@@ -56,7 +56,7 @@ export const OrderHistoryCarousel: React.FC<OrderHistoryCarouselProps> = ({ orde
             Billed customer invoices and dispatched orders will be tracked here in real-time.
           </p>
           <button
-            onClick={() => navigate('/sales/invoices')}
+            onClick={() => navigate('/sales/invoices/create')}
             className="mt-4 px-3.5 py-1.5 text-xs font-medium rounded-xl bg-brand-orange text-white hover:bg-orange-600 transition-colors"
           >
             + Create New Invoice

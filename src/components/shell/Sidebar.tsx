@@ -2,9 +2,7 @@ import React, { useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
-  Layers,
   Package,
-  ShieldAlert,
   UserCog,
   Settings,
   ChevronLeft,
@@ -49,24 +47,10 @@ export const Sidebar: React.FC = () => {
       icon: <LayoutDashboard className="w-5 h-5" strokeWidth={1.5} />,
     },
     {
-      id: 'materials',
-      label: t('nav.materials', 'Materials'),
-      path: '/materials',
-      icon: <Layers className="w-5 h-5" strokeWidth={1.5} />,
-    },
-    {
       id: 'items',
       label: t('nav.items', 'Items'),
       path: '/items',
       icon: <Package className="w-5 h-5" strokeWidth={1.5} />,
-      badge: '3.4k',
-    },
-    {
-      id: 'audit-log',
-      label: t('nav.audit_log', 'Audit Log'),
-      path: '/audit-log',
-      icon: <ShieldAlert className="w-5 h-5" strokeWidth={1.5} />,
-      allowedRoles: ['admin'],
     },
     {
       id: 'users-roles',

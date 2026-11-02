@@ -1,3 +1,6 @@
+import { STARTER_PRODUCTS } from '../data/inventorySeed';
+import { migrateProductCategory } from '../data/materialCategories';
+
 /**
  * Centralized persistent storage service for StockVista ERP.
  * Manages clean initial states, safe schema validation, and persistent storage in browser localStorage.
@@ -5,6 +8,7 @@
 
 export const STORAGE_KEYS = {
   INITIALIZED: 'stockvista_erp_v3_initialized',
+  STARTER_SEEDED: 'stockvista_starter_seeded_v1',
   USERS: 'stockvista_erp_v3_users',
   SESSION: 'stockvista_erp_v3_session',
   ITEMS: 'stockvista_erp_v3_items',
@@ -25,6 +29,7 @@ export const STORAGE_KEYS = {
   DOCUMENTS: 'stockvista_erp_v3_documents',
   NOTIFICATIONS: 'stockvista_erp_v3_notifications',
   SETTINGS: 'stockvista_erp_v3_settings',
+  CALENDAR_EVENTS: 'stockvista_erp_v3_calendar_events',
 } as const;
 
 export class StorageService {
@@ -74,9 +79,9 @@ export class StorageService {
           legacyKeys.forEach((key) => localStorage.removeItem(key));
         }
 
-        // Initialize clean empty collections
+        // Initialize clean starter collections: exactly the four starter products for items, clean empty for all transactions/parties
         storage.setItem(STORAGE_KEYS.USERS, JSON.stringify([]));
-        storage.setItem(STORAGE_KEYS.ITEMS, JSON.stringify([]));
+        storage.setItem(STORAGE_KEYS.ITEMS, JSON.stringify(STARTER_PRODUCTS));
         storage.setItem(STORAGE_KEYS.WAREHOUSES, JSON.stringify([]));
         storage.setItem(STORAGE_KEYS.CUSTOMERS, JSON.stringify([]));
         storage.setItem(STORAGE_KEYS.SUPPLIERS, JSON.stringify([]));
@@ -95,6 +100,42 @@ export class StorageService {
         storage.setItem(STORAGE_KEYS.NOTIFICATIONS, JSON.stringify([]));
 
         storage.setItem(STORAGE_KEYS.INITIALIZED, 'true');
+        storage.setItem(STORAGE_KEYS.STARTER_SEEDED, 'true');
+      } else {
+        // If initialized previously but starter products have not been seeded and items list is empty
+        const seeded = storage.getItem(STORAGE_KEYS.STARTER_SEEDED);
+        if (!seeded) {
+          const currentItemsRaw = storage.getItem(STORAGE_KEYS.ITEMS);
+          if (!currentItemsRaw || currentItemsRaw === '[]') {
+            storage.setItem(STORAGE_KEYS.ITEMS, JSON.stringify(STARTER_PRODUCTS));
+          }
+          storage.setItem(STORAGE_KEYS.STARTER_SEEDED, 'true');
+        }
+
+        // Ensure any existing items are safely preserved and migrated to approved catalogue categories
+        const currentItemsRaw = storage.getItem(STORAGE_KEYS.ITEMS);
+        if (currentItemsRaw) {
+          try {
+            const items = JSON.parse(currentItemsRaw);
+            if (Array.isArray(items)) {
+              let changed = false;
+              const validCats = ['card_holder', 'lanyard', 'hook', 'button_bag'];
+              const migrated = items.map((it: any) => {
+                if (!validCats.includes(it.materialCategory)) {
+                  changed = true;
+                  return {
+                    ...it,
+                    materialCategory: migrateProductCategory(it.materialCategory, it.name, it.sku),
+                  };
+                }
+                return it;
+              });
+              if (changed) {
+                storage.setItem(STORAGE_KEYS.ITEMS, JSON.stringify(migrated));
+              }
+            }
+          } catch {}
+        }
       }
       this.isInitialized = true;
     } catch (e) {

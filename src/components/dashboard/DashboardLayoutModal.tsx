@@ -15,7 +15,7 @@ const CARD_LABELS: Record<string, string> = {
   orders_card: 'Orders Pipeline Overview (Textured Bars)',
   stock_donut_card: 'Warehouse Stock Donut & Thresholds',
   order_history_card: 'Recent Order History (Stacked Carousel)',
-  logistics_map_card: 'India Logistics Map & Highway Delay Tags',
+  calendar_card: 'Operations Calendar & Reminders',
   product_table_card: 'Product List & Inventory Master Table',
 };
 
@@ -59,7 +59,7 @@ export const DashboardLayoutModal: React.FC<DashboardLayoutModalProps> = ({
       'orders_card',
       'stock_donut_card',
       'order_history_card',
-      'logistics_map_card',
+      'calendar_card',
       'product_table_card',
     ];
     setOrder(defaultOrder);
