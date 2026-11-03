@@ -189,55 +189,67 @@ export const authService = {
     StorageService.remove(STORAGE_KEYS.SESSION);
   },
 
-  /**
-   * Safe check for whether Demo Admin Login is configured and permitted.
-   * STRICT SAFETY REQUIREMENTS:
-   * 1. Disabled unconditionally in production (import.meta.env.PROD === true)
-   * 2. Disabled unless explicitly enabled via VITE_ENABLE_DEMO_LOGIN === 'true'
-   * 3. Disabled unless valid non-empty demo credentials are provided in local untracked environment
-   */
-  isDemoLoginConfigured(): boolean {
-    if (import.meta.env.PROD) {
-      return false;
-    }
-    const isEnabled = import.meta.env.VITE_ENABLE_DEMO_LOGIN === 'true';
-    if (!isEnabled) {
-      return false;
-    }
-    const email = import.meta.env.VITE_DEMO_ADMIN_EMAIL;
-    const password = import.meta.env.VITE_DEMO_ADMIN_PASSWORD;
-    return Boolean(email && email.trim() && password && password.trim());
+  isDemoSession(): boolean {
+    return StorageService.isDemoActive();
   },
 
   /**
-   * Secure developer/demo admin login
+   * Safe check for whether Sweedal – Demo Admin Login is configured and permitted.
+   * STRICT SAFETY REQUIREMENTS:
+   * 1. Never exposed in production unless explicitly enabled via VITE_ENABLE_DEMO_LOGIN === 'true'
+   *    or running in a designated demo showcase host (e.g. github.io demo).
+   * 2. In strict production deployments, passwordless demo login is disabled by default.
+   * 3. Operates strictly in a sandboxed storage workspace.
+   */
+  isDemoLoginConfigured(): boolean {
+    if (import.meta.env.VITE_ENABLE_DEMO_LOGIN === 'false') {
+      return false;
+    }
+    if (import.meta.env.PROD) {
+      if (import.meta.env.VITE_ENABLE_DEMO_LOGIN === 'true') {
+        return true;
+      }
+      if (typeof window !== 'undefined' && window.location.hostname.endsWith('github.io')) {
+        return true;
+      }
+      return false;
+    }
+    // Permitted in local development & demo environments
+    return true;
+  },
+
+  /**
+   * Sweedal – One-Click Demo Admin Login
+   * Immediately launches a separate demo administrator workspace with zero credentials required.
    */
   async loginDemoAdmin(): Promise<AuthSession> {
     if (!this.isDemoLoginConfigured()) {
       throw new Error(
-        'Demo Admin Login is disabled in production or not configured with local development credentials.'
+        'Sweedal – Demo Admin Login is disabled in production or this environment is not an enabled demo environment.'
       );
     }
 
-    const demoEmail = (import.meta.env.VITE_DEMO_ADMIN_EMAIL || 'demo.admin@stockvista.local').trim();
+    // Pre-populate isolated demo workspace with realistic sample data
+    StorageService.seedDemoWorkspace();
+
     const demoUser: User = {
-      id: 'usr-demo-admin-01',
-      name: 'Demo Administrator',
-      email: demoEmail,
+      id: 'usr-demo-sweedal-01',
+      name: 'Sweedal – Demo Admin',
+      email: 'sweedal.demo@stockvista.internal',
       role: 'admin',
-      roleTitle: 'System Administrator (Demo Session)',
+      roleTitle: 'Demonstration Administrator (Demo Workspace)',
       phone: '+91 98000 00000',
       status: 'active',
       isDemo: true,
       lastLogin: new Date().toISOString(),
       warehouseId: 'all',
-      warehouseName: 'All Facilities',
+      warehouseName: 'All Demo Facilities',
     };
 
     const session: AuthSession = {
       user: demoUser,
-      token: `demo_token_${Date.now()}`,
-      expiresAt: Date.now() + 4 * 60 * 60 * 1000, // 4 hours
+      token: `demo_sweedal_${Date.now()}`,
+      expiresAt: Date.now() + 8 * 60 * 60 * 1000, // 8 hours
       isDemo: true,
     };
 

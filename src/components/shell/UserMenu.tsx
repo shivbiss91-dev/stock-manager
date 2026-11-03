@@ -9,9 +9,11 @@ import {
   ShieldCheck,
   ChevronDown,
   UserCheck,
+  RotateCcw,
 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
+import { StorageService } from '../../services/storageService';
 import { Role } from '../../types/auth';
 import { changeAppLanguage, SUPPORTED_LANGUAGES } from '../../i18n';
 import { useTranslation } from 'react-i18next';
@@ -60,6 +62,14 @@ export const UserMenu: React.FC<UserMenuProps> = ({ collapsed = false }) => {
     changeAppLanguage(code);
     setIsOpen(false);
     setShowLangSubmenu(false);
+  };
+
+  const handleResetDemoData = () => {
+    setIsOpen(false);
+    if (window.confirm('Reset all demo inventory, invoices, and orders back to initial sample state? This will only affect demo data.')) {
+      StorageService.resetDemoWorkspace();
+      window.location.reload();
+    }
   };
 
   return (
@@ -170,16 +180,14 @@ export const UserMenu: React.FC<UserMenuProps> = ({ collapsed = false }) => {
                   className="w-full flex items-center justify-between px-3 py-2 text-xs font-medium rounded-xl text-slate-700 dark:text-[#F2F4F8] hover:bg-slate-100 dark:hover:bg-white/[0.06] transition-colors"
                 >
                   <div className="flex items-center gap-2.5">
-                    <Globe className="w-4 h-4 text-brand-orange" />
-                    <span>Language</span>
+                    <Globe className="w-4 h-4 text-emerald-400" />
+                    <span>Language: {SUPPORTED_LANGUAGES.find((l) => l.code === i18n.language)?.name || 'English'}</span>
                   </div>
-                  <span className="text-[10px] uppercase font-bold text-slate-400 font-mono">
-                    {i18n.language}
-                  </span>
+                  <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform ${showLangSubmenu ? 'rotate-180' : ''}`} />
                 </button>
 
                 {showLangSubmenu && (
-                  <div className="my-1 pl-4 space-y-0.5 bg-slate-50 dark:bg-white/[0.03] rounded-xl p-1.5 border border-slate-100 dark:border-white/[0.06]">
+                  <div className="my-1 ml-4 pl-2 border-l border-slate-200 dark:border-white/[0.08] space-y-1">
                     {SUPPORTED_LANGUAGES.map((lang) => (
                       <button
                         key={lang.code}
@@ -190,15 +198,15 @@ export const UserMenu: React.FC<UserMenuProps> = ({ collapsed = false }) => {
                             : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/5'
                         }`}
                       >
-                        <span>{lang.native}</span>
-                        <span className="text-[10px] text-slate-400">{lang.label}</span>
+                        <span>{lang.nativeName}</span>
+                        <span className="text-[10px] text-slate-400">{lang.name}</span>
                       </button>
                     ))}
                   </div>
                 )}
               </div>
 
-              {/* Quick Role Switcher */}
+              {/* Role switcher (For ERP testing) */}
               <div>
                 <button
                   onClick={() => setShowRoleSubmenu(!showRoleSubmenu)}
@@ -206,17 +214,13 @@ export const UserMenu: React.FC<UserMenuProps> = ({ collapsed = false }) => {
                 >
                   <div className="flex items-center gap-2.5">
                     <ShieldCheck className="w-4 h-4 text-brand-orange" />
-                    <span>Switch Role (Demo)</span>
+                    <span>Switch Role (Test): <strong className="capitalize">{user.role}</strong></span>
                   </div>
-                  <ChevronDown
-                    className={`w-3.5 h-3.5 text-slate-400 transition-transform ${
-                      showRoleSubmenu ? 'rotate-180' : ''
-                    }`}
-                  />
+                  <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform ${showRoleSubmenu ? 'rotate-180' : ''}`} />
                 </button>
 
                 {showRoleSubmenu && (
-                  <div className="my-1 pl-4 space-y-0.5 bg-slate-50 dark:bg-white/[0.03] rounded-xl p-1.5 border border-slate-100 dark:border-white/[0.06]">
+                  <div className="my-1 ml-4 pl-2 border-l border-slate-200 dark:border-white/[0.08] space-y-1">
                     {(['admin', 'manager', 'staff', 'viewer'] as Role[]).map((r) => (
                       <button
                         key={r}
@@ -246,6 +250,19 @@ export const UserMenu: React.FC<UserMenuProps> = ({ collapsed = false }) => {
                 )}
               </div>
 
+              {/* Reset Demo Data (Visible strictly in Demo Mode) */}
+              {user.isDemo && (
+                <button
+                  type="button"
+                  onClick={handleResetDemoData}
+                  className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold rounded-xl text-amber-600 dark:text-amber-400 hover:bg-amber-500/10 transition-colors"
+                  title="Reset sample inventory and transactions"
+                >
+                  <RotateCcw className="w-4 h-4 text-amber-500" />
+                  <span>Reset Demo Data</span>
+                </button>
+              )}
+
               <div className="border-t border-slate-100 dark:border-white/[0.06] my-1 pt-1" />
 
               {/* Logout */}
@@ -257,7 +274,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ collapsed = false }) => {
                 className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold rounded-xl text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors"
               >
                 <LogOut className="w-4 h-4" />
-                <span>{t('topbar.logout', 'Sign Out')}</span>
+                <span>{user.isDemo ? 'Exit Demo Session' : t('topbar.logout', 'Sign Out')}</span>
               </button>
             </div>
           </motion.div>

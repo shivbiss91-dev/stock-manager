@@ -15,12 +15,13 @@ import {
   Lock,
   ArrowRight,
   ShieldCheck,
-  Building2,
   Sparkles,
   AlertCircle,
   UserCheck,
   Phone,
   User as UserIcon,
+  PlayCircle,
+  Zap,
 } from 'lucide-react';
 
 const loginSchema = z.object({
@@ -67,6 +68,8 @@ export const LoginPage: React.FC = () => {
     };
   }, []);
 
+  const from = (location.state as { from?: { pathname: string } })?.from?.pathname || '/dashboard';
+
   const handleDemoLogin = async () => {
     clearError();
     try {
@@ -96,8 +99,6 @@ export const LoginPage: React.FC = () => {
       confirmPassword: '',
     },
   });
-
-  const from = (location.state as { from?: { pathname: string } })?.from?.pathname || '/dashboard';
 
   const onLoginSubmit = async (data: LoginFormData) => {
     clearError();
@@ -195,23 +196,77 @@ export const LoginPage: React.FC = () => {
             <Logo size="md" showWordmark={true} />
           </div>
 
+          {/* EXPERIENCE B: SEPARATE DEMO ADMIN OPTION (SWEEDAL – DEMO ADMIN) */}
+          {isDemoAvailable && (
+            <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-amber-500/[0.12] via-brand-orange/[0.08] to-slate-900/40 border-2 border-amber-500/40 dark:border-amber-500/30 shadow-lg relative overflow-hidden group">
+              <div className="flex items-start justify-between gap-3 mb-2.5">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-500 to-brand-orange text-slate-950 flex items-center justify-center shadow-md font-extrabold flex-shrink-0">
+                    <Zap className="w-5 h-5 fill-current" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-extrabold text-slate-900 dark:text-[#F2F4F8] flex items-center gap-2">
+                      <span>Sweedal – Demo Admin</span>
+                    </h3>
+                    <span className="inline-flex items-center gap-1 text-[10px] text-amber-600 dark:text-amber-400 font-bold uppercase tracking-wider">
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                      One-Click Demo Workspace
+                    </span>
+                  </div>
+                </div>
+                <span className="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-600 dark:text-amber-400 text-[10px] font-bold border border-amber-500/30">
+                  Instant Access
+                </span>
+              </div>
+
+              <p className="text-slate-600 dark:text-slate-300 text-xs leading-relaxed mb-3.5">
+                Explore a complete interactive demo workspace pre-loaded with sample Card Holders, Lanyards, Hooks, Button Bags, invoices, orders, and warehouses. <strong>No username, password, or OTP required.</strong>
+              </p>
+
+              <button
+                type="button"
+                onClick={handleDemoLogin}
+                disabled={isLoading}
+                className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-amber-500 via-[#FF6B35] to-[#E85924] hover:from-amber-600 hover:to-[#D44A17] text-white font-extrabold text-xs tracking-wide shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-[0.99]"
+              >
+                <PlayCircle className="w-4 h-4 fill-white/20" />
+                <span>Launch Sweedal – Demo Admin Workspace</span>
+                <ArrowRight className="w-4 h-4 ml-auto" />
+              </button>
+
+              <div className="mt-2 text-[10.5px] text-slate-500 dark:text-slate-400 flex items-center justify-between">
+                <span>• Isolated sandboxed storage</span>
+                <span>• Production data protected</span>
+              </div>
+            </div>
+          )}
+
+          {/* DIVIDER BETWEEN EXPERIENCES */}
+          <div className="relative flex items-center justify-center">
+            <div className="w-full border-t border-slate-200 dark:border-white/[0.08]" />
+            <span className="absolute bg-[#F4F7FA] dark:bg-[#05060A] px-3 text-[11px] font-bold tracking-wider text-slate-400 dark:text-slate-500 uppercase">
+              Actual Business Login
+            </span>
+          </div>
+
+          {/* EXPERIENCE A: ACTUAL ADMIN LOGIN */}
           {isFreshInstall === true ? (
             /* First-Time Administrator Setup Flow */
-            <div className="space-y-6">
+            <div className="space-y-5">
               <div>
                 <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-brand-orange/15 text-brand-orange text-xs font-bold border border-brand-orange/30 mb-2">
                   <UserCheck className="w-3.5 h-3.5" />
                   <span>Fresh Application Setup</span>
                 </div>
-                <h2 className="text-2xl font-bold text-slate-900 dark:text-[#F2F4F8] tracking-tight">
-                  Create Administrator Account
+                <h2 className="text-xl font-bold text-slate-900 dark:text-[#F2F4F8] tracking-tight">
+                  Configure Actual Administrator
                 </h2>
                 <p className="text-xs text-slate-500 dark:text-[#9AA0AE] mt-1">
-                  Configure your primary System Administrator account to initialize your clean ERP instance.
+                  Configure your primary corporate administrator account for real production operations.
                 </p>
               </div>
 
-              <form onSubmit={setupForm.handleSubmit(onSetupSubmit)} className="space-y-4">
+              <form onSubmit={setupForm.handleSubmit(onSetupSubmit)} className="space-y-3.5">
                 <Input
                   label="Full Name"
                   type="text"
@@ -272,23 +327,23 @@ export const LoginPage: React.FC = () => {
                   rightIcon={<ArrowRight className="w-4 h-4" />}
                   className="w-full"
                 >
-                  Initialize System & Log In
+                  Create Actual Admin & Log In
                 </Button>
               </form>
             </div>
           ) : (
             /* Normal Authenticated Sign-In Flow */
-            <div className="space-y-6">
+            <div className="space-y-5">
               <div>
-                <h2 className="text-2xl font-bold text-slate-900 dark:text-[#F2F4F8] tracking-tight">
-                  Welcome to StockVista
+                <h2 className="text-xl font-bold text-slate-900 dark:text-[#F2F4F8] tracking-tight">
+                  Actual Admin Sign-In
                 </h2>
                 <p className="text-xs text-slate-500 dark:text-[#9AA0AE] mt-1">
-                  Enter your registered work credentials to access your ERP terminal.
+                  Enter your registered administrator credentials for production business operations.
                 </p>
               </div>
 
-              <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-4">
+              <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-3.5">
                 <Input
                   label="Work Email"
                   type="email"
@@ -341,38 +396,9 @@ export const LoginPage: React.FC = () => {
                   rightIcon={<ArrowRight className="w-4 h-4" />}
                   className="w-full"
                 >
-                  Sign In to StockVista
+                  Sign In (Production Access)
                 </Button>
               </form>
-            </div>
-          )}
-
-          {/* Explicitly Enabled Demo Admin Login (Available strictly in Development/Demo Mode) */}
-          {isDemoAvailable && (
-            <div className="pt-4 border-t border-slate-200 dark:border-white/[0.08] space-y-3">
-              <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-xs space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="font-bold text-amber-500 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
-                    <Sparkles className="w-3.5 h-3.5" />
-                    Demo / Development Mode
-                  </span>
-                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-500 font-semibold">
-                    Non-Production
-                  </span>
-                </div>
-                <p className="text-slate-600 dark:text-slate-300 text-[11px] leading-relaxed">
-                  Demo credentials configured via local environment. This session operates strictly against sandboxed storage and cannot access real production data.
-                </p>
-                <button
-                  type="button"
-                  onClick={handleDemoLogin}
-                  disabled={isLoading}
-                  className="w-full py-2.5 px-3 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer"
-                >
-                  <ShieldCheck className="w-4 h-4" />
-                  <span>Demo Admin Login</span>
-                </button>
-              </div>
             </div>
           )}
         </div>
