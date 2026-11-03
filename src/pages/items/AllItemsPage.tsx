@@ -20,6 +20,8 @@ import { StockStatus } from '../../types/common';
 import { formatINR } from '../../utils/formatINR';
 import { formatCategoryName } from '../../data/materialCategories';
 import { AddItemModal } from '../../components/dashboard/AddItemModal';
+import { EditItemModal } from '../../components/itemDetail/EditItemModal';
+import { ProductImage } from '../../components/common/ProductImage';
 import { BarcodeLabelModal } from '../../components/itemDetail/BarcodeLabelModal';
 import { TransferStockModal } from '../../components/itemDetail/TransferStockModal';
 import { QuickStockAdjustmentModal } from '../../components/dashboard/QuickStockAdjustmentModal';
@@ -53,6 +55,7 @@ export const AllItemsPage: React.FC = () => {
 
   // Modals state
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [selectedItemForEdit, setSelectedItemForEdit] = useState<ComputedInventoryItem | null>(null);
   const [selectedItemForLabel, setSelectedItemForLabel] = useState<ComputedInventoryItem | null>(null);
   const [selectedItemForTransfer, setSelectedItemForTransfer] = useState<ComputedInventoryItem | null>(null);
   const [adjustmentItem, setAdjustmentItem] = useState<ComputedInventoryItem | null>(null);
@@ -314,9 +317,10 @@ export const AllItemsPage: React.FC = () => {
                     {/* Product Name & Thumbnail */}
                     <td className="py-3 px-4">
                       <div className="flex items-center gap-3">
-                        <img
-                          src={item.images[0]}
+                        <ProductImage
+                          src={item.images?.[0]}
                           alt={item.name}
+                          category={item.materialCategory}
                           className="w-10 h-10 rounded-lg object-cover bg-slate-100 dark:bg-slate-900 flex-shrink-0 border border-slate-200 dark:border-white/[0.06]"
                         />
                         <div className="min-w-0">
@@ -430,12 +434,9 @@ export const AllItemsPage: React.FC = () => {
                           <Eye className="w-4 h-4" />
                         </Link>
                         <button
-                          onClick={() => {
-                            setAdjustmentItem(item);
-                            setAdjustmentMode('direct');
-                          }}
+                          onClick={() => setSelectedItemForEdit(item)}
                           className="p-1.5 text-slate-400 hover:text-accent-orange hover:bg-white/10 rounded-lg transition"
-                          title="Stock Adjustment & Calibration"
+                          title="Edit Product Information & Image"
                         >
                           <Edit className="w-4 h-4" />
                         </button>
@@ -539,6 +540,22 @@ export const AllItemsPage: React.FC = () => {
               setItems(res.items);
               setTotalCount(res.totalCount);
             });
+          }}
+        />
+      )}
+
+      {selectedItemForEdit && (
+        <EditItemModal
+          item={selectedItemForEdit}
+          isOpen={!!selectedItemForEdit}
+          onClose={() => setSelectedItemForEdit(null)}
+          onItemUpdated={() => {
+            setSelectedItemForEdit(null);
+            reloadItems();
+          }}
+          onItemDeleted={() => {
+            setSelectedItemForEdit(null);
+            reloadItems();
           }}
         />
       )}

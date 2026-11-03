@@ -64,6 +64,7 @@ import { formatINR } from '../../utils/formatINR';
 import { formatCategoryName } from '../../data/materialCategories';
 import { formatDate } from '../../utils/dateUtils';
 import { EditItemModal } from '../../components/itemDetail/EditItemModal';
+import { ProductImage } from '../../components/common/ProductImage';
 import { TransferStockModal } from '../../components/itemDetail/TransferStockModal';
 import { BarcodeLabelModal } from '../../components/itemDetail/BarcodeLabelModal';
 import { useNotificationStore } from '../../store/notificationStore';
@@ -369,13 +370,13 @@ export const ItemDetailPage: React.FC = () => {
         {/* Left: Product Images Gallery (5 cols) */}
         <div className="lg:col-span-5 template-card border border-slate-200 dark:border-white/[0.06] rounded-[20px] p-4 sm:p-5 shadow-soft space-y-4">
           <div className="relative aspect-[4/3] rounded-xl overflow-hidden bg-slate-100 dark:bg-black/40 border border-slate-200 dark:border-white/[0.06] flex items-center justify-center group">
-            <img
+            <ProductImage
               src={item.images[selectedImageIndex] || item.images[0]}
               alt={item.name}
+              category={item.materialCategory}
               className={`w-full h-full object-cover transition-transform duration-300 ${
                 isImageZoomed ? 'scale-150 cursor-zoom-out' : 'group-hover:scale-105 cursor-zoom-in'
               }`}
-              onClick={() => setIsImageZoomed(!isImageZoomed)}
             />
 
             {/* Category Chip */}
@@ -411,7 +412,7 @@ export const ItemDetailPage: React.FC = () => {
                       : 'border-slate-200 dark:border-white/[0.08] opacity-60 hover:opacity-100'
                   }`}
                 >
-                  <img src={img} alt={`Thumbnail ${idx + 1}`} className="w-full h-full object-cover" />
+                  <ProductImage src={img} alt={`Thumbnail ${idx + 1}`} category={item.materialCategory} className="w-full h-full object-cover" />
                 </button>
               ))}
             </div>

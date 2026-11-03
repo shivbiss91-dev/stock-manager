@@ -3,6 +3,8 @@ import { Card } from '../common/Card';
 import { Badge } from '../common/Badge';
 import { Button } from '../common/Button';
 import { AddItemModal } from './AddItemModal';
+import { EditItemModal } from '../itemDetail/EditItemModal';
+import { ProductImage } from '../common/ProductImage';
 import { QuickStockAdjustmentModal } from './QuickStockAdjustmentModal';
 import { inventoryService } from '../../services/inventoryService';
 import { ComputedInventoryItem, MaterialCategory } from '../../types/inventory';
@@ -59,6 +61,7 @@ export const ProductListTableCard: React.FC<ProductListTableCardProps> = ({
 
   // Modals & Popovers
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [selectedItemForEdit, setSelectedItemForEdit] = useState<ComputedInventoryItem | null>(null);
   const [adjustmentItem, setAdjustmentItem] = useState<ComputedInventoryItem | null>(null);
   const [adjustmentMode, setAdjustmentMode] = useState<'add' | 'deduct' | 'direct'>('add');
   const [itemToDelete, setItemToDelete] = useState<ComputedInventoryItem | null>(null);
@@ -504,18 +507,13 @@ export const ProductListTableCard: React.FC<ProductListTableCardProps> = ({
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-3">
                           <div className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-[#1A1D26] border border-slate-200 dark:border-white/[0.08] flex items-center justify-center flex-shrink-0 overflow-hidden text-brand-orange">
-                            {item.images?.[0] ? (
-                              <img
-                                src={item.images[0]}
-                                alt={item.name}
-                                className="w-full h-full object-cover"
-                                onError={(e) => {
-                                  (e.currentTarget as HTMLImageElement).src = '/products/card-holder.svg';
-                                }}
-                              />
-                            ) : (
-                              <Box className="w-4 h-4" strokeWidth={1.5} />
-                            )}
+                            <ProductImage
+                              src={item.images?.[0]}
+                              alt={item.name}
+                              category={item.materialCategory}
+                              className="w-full h-full object-cover"
+                              fallbackIconSize={14}
+                            />
                           </div>
                           <div className="min-w-0 max-w-[240px]">
                             <p
@@ -634,14 +632,11 @@ export const ProductListTableCard: React.FC<ProductListTableCardProps> = ({
                             <Eye className="w-4 h-4" strokeWidth={1.5} />
                           </button>
 
-                          {/* Edit / Quick Adjust */}
+                          {/* Edit Product Information & Image */}
                           <button
-                            onClick={() => {
-                              setAdjustmentItem(item);
-                              setAdjustmentMode('direct');
-                            }}
+                            onClick={() => setSelectedItemForEdit(item)}
                             className="p-1.5 rounded-lg text-slate-500 hover:text-brand-orange hover:bg-white/10 transition-colors"
-                            title="Quick Stock Adjustment & Calibration"
+                            title="Edit Product Information & Image"
                           >
                             <Edit className="w-4 h-4" strokeWidth={1.5} />
                           </button>
@@ -732,6 +727,22 @@ export const ProductListTableCard: React.FC<ProductListTableCardProps> = ({
         onClose={() => setAdjustmentItem(null)}
         onSuccess={loadData}
       />
+
+      {selectedItemForEdit && (
+        <EditItemModal
+          item={selectedItemForEdit}
+          isOpen={!!selectedItemForEdit}
+          onClose={() => setSelectedItemForEdit(null)}
+          onItemUpdated={() => {
+            setSelectedItemForEdit(null);
+            loadData();
+          }}
+          onItemDeleted={() => {
+            setSelectedItemForEdit(null);
+            loadData();
+          }}
+        />
+      )}
 
       {/* Delete Item Confirmation Modal */}
       {itemToDelete && (
