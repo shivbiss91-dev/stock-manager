@@ -209,7 +209,7 @@ export const authService = {
       if (import.meta.env.VITE_ENABLE_DEMO_LOGIN === 'true') {
         return true;
       }
-      if (typeof window !== 'undefined' && window.location.hostname.endsWith('github.io')) {
+      if (typeof window !== 'undefined' && (window.location.hostname.endsWith('github.io') || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
         return true;
       }
       return false;

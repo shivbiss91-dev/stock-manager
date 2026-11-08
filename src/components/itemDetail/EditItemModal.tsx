@@ -9,31 +9,20 @@ import {
   Image as ImageIcon,
   Upload,
   Trash2,
-  Building2,
-  Percent,
-  Hash,
   Eye,
   Maximize2,
   RotateCcw,
-  RefreshCw,
   Check,
   Loader2,
 } from 'lucide-react';
 import { ComputedInventoryItem, MaterialCategory } from '../../types/inventory';
-import { Warehouse } from '../../types/warehouse';
 import { PRODUCT_CATEGORIES } from '../../data/materialCategories';
 import { useAuthStore } from '../../store/authStore';
 import { inventoryService } from '../../services/inventoryService';
-import { warehouseService } from '../../services/warehouseService';
 import { approvalsService } from '../../services/approvalsService';
 import { useNotificationStore } from '../../store/notificationStore';
 import { formatINR } from '../../utils/formatINR';
-import {
-  PREDEFINED_UNITS,
-  PredefinedUnit,
-  normalizeUnitCode,
-  PackagingConversions,
-} from '../../utils/unitConversions';
+import { PackagingConversions } from '../../utils/unitConversions';
 import { ProductImage } from '../common/ProductImage';
 
 interface EditItemModalProps {
@@ -61,7 +50,6 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({
   const isAdmin = user?.role === 'owner' || user?.role === 'admin';
 
   const [name, setName] = useState(item.name);
-  const [sku, setSku] = useState(item.sku);
   const [materialCategory, setMaterialCategory] = useState<MaterialCategory>(item.materialCategory);
   
   // Image editing state
@@ -74,12 +62,6 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({
   const [isFullPreviewOpen, setIsFullPreviewOpen] = useState(false);
   const [imageFileInfo, setImageFileInfo] = useState<{ name: string; size: string } | null>(null);
 
-  const [hsnCode, setHsnCode] = useState(item.hsnCode || '');
-  const [gstRate, setGstRate] = useState((item.gstRate ?? 0).toString());
-  const [warehouseId, setWarehouseId] = useState(item.warehouseId || '');
-  const [unit, setUnit] = useState<PredefinedUnit>(normalizeUnitCode(item.unit));
-  const [materialSubtype, setMaterialSubtype] = useState(item.materialSubtype);
-  const [rackLocation, setRackLocation] = useState(item.rackLocation);
   const [sellingPrice, setSellingPrice] = useState(item.sellingPrice.toString());
   const [costPrice, setCostPrice] = useState(item.costPrice.toString());
   const [reorderLevel, setReorderLevel] = useState(item.reorderLevel.toString());
@@ -97,9 +79,6 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({
   );
   const [description, setDescription] = useState(item.description);
 
-  // Available warehouses loaded from service
-  const [availableWarehouses, setAvailableWarehouses] = useState<Warehouse[]>([]);
-
   // Approval request specific fields
   const [approvalReason, setApprovalReason] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -110,13 +89,8 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    warehouseService.getWarehouses().then(setAvailableWarehouses);
-  }, []);
-
-  useEffect(() => {
     if (isOpen) {
       setName(item.name);
-      setSku(item.sku);
       setMaterialCategory(item.materialCategory);
       setImageUrl(item.images[0] || '');
       setImageFileInfo(null);
@@ -124,12 +98,6 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({
       setImageSuccess(null);
       setShowRemoveConfirm(false);
       setIsFullPreviewOpen(false);
-      setHsnCode(item.hsnCode || '');
-      setGstRate((item.gstRate ?? 0).toString());
-      setWarehouseId(item.warehouseId || '');
-      setUnit(normalizeUnitCode(item.unit));
-      setMaterialSubtype(item.materialSubtype);
-      setRackLocation(item.rackLocation);
       setSellingPrice(item.sellingPrice.toString());
       setCostPrice(item.costPrice.toString());
       setReorderLevel(item.reorderLevel.toString());
@@ -260,7 +228,6 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({
 
     const parsedSelling = parseFloat(sellingPrice);
     const parsedCost = parseFloat(costPrice);
-    const parsedGst = parseFloat(gstRate);
     const parsedReorder = parseInt(reorderLevel, 10);
     const parsedReorderQty = parseInt(reorderQuantity, 10) || (parsedReorder > 0 ? parsedReorder * 2 : 10);
     const parsedBox = parseInt(boxMultiplier, 10) || 20;
@@ -280,11 +247,8 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({
       return;
     }
 
-    const selectedWh = availableWarehouses.find((w) => w.id === warehouseId);
-    const warehouseName = selectedWh ? selectedWh.name : (warehouseId ? 'Assigned Facility' : 'Unassigned');
-
     const updatedPackaging: PackagingConversions = {
-      baseUnit: unit === 'UNT' ? 'UNT' : 'PCS',
+      baseUnit: item.unit === 'UNT' ? 'UNT' : 'PCS',
       dozenMultiplier: 12,
       boxMultiplier: parsedBox,
       cartonMultiplier: parsedCarton,
@@ -297,19 +261,19 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({
     setIsSubmitting(true);
     try {
       if (isAdmin) {
-        // Direct admin update
+        // Direct admin update (preserves SKU, HSN, GST, warehouse, and rack location data)
         const updated = await inventoryService.updateItem(item.id, {
           name: name.trim(),
-          sku: sku.trim(),
+          sku: item.sku,
           materialCategory,
           images: finalImages,
-          hsnCode: hsnCode.trim(),
-          gstRate: isNaN(parsedGst) ? 0 : parsedGst,
-          warehouseId: warehouseId.trim(),
-          warehouseName,
-          unit,
-          materialSubtype: materialSubtype.trim(),
-          rackLocation: rackLocation.trim(),
+          hsnCode: item.hsnCode,
+          gstRate: item.gstRate,
+          warehouseId: item.warehouseId || '',
+          warehouseName: item.warehouseName || 'Unassigned',
+          unit: item.unit,
+          materialSubtype: item.materialSubtype || '',
+          rackLocation: item.rackLocation || '',
           sellingPrice: parsedSelling,
           costPrice: parsedCost,
           reorderLevel: parsedReorder,
@@ -347,20 +311,11 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({
         if (name.trim() !== item.name) {
           changes.push(`Name change to "${name.trim()}"`);
         }
-        if (sku.trim() !== item.sku) {
-          changes.push(`SKU: ${item.sku} ➔ ${sku.trim()}`);
-        }
-        if (hsnCode.trim() !== item.hsnCode) {
-          changes.push(`HSN: "${item.hsnCode}" ➔ "${hsnCode.trim()}"`);
-        }
-        if (unit !== item.unit) {
-          changes.push(`Unit: ${item.unit} ➔ ${unit}`);
+        if (materialCategory !== item.materialCategory) {
+          changes.push(`Category: ${item.materialCategory} ➔ ${materialCategory}`);
         }
         if (parsedReorder !== item.reorderLevel) {
           changes.push(`Threshold: ${item.reorderLevel} ➔ ${parsedReorder}`);
-        }
-        if (warehouseId !== item.warehouseId) {
-          changes.push(`Warehouse: ${item.warehouseName} ➔ ${warehouseName}`);
         }
 
         const changeSummary = changes.length > 0 ? changes.join('; ') : 'General item metadata adjustments';
@@ -414,7 +369,7 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({
                 {isAdmin ? 'Edit Product Information' : 'Request Product Modification'}
               </h2>
               <p className="text-xs text-slate-500 dark:text-[#9AA0AE]">
-                Manage product image, identity, pricing, threshold, HSN, and catalogue details
+                Manage product image, identity, pricing, thresholds, and catalogue details
               </p>
             </div>
           </div>
@@ -728,112 +683,7 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({
             </div>
           </div>
 
-          {/* SKU, HSN, GST & Unit */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                SKU Code *
-              </label>
-              <div className="relative">
-                <Hash className="w-3.5 h-3.5 absolute left-2.5 top-2.5 text-slate-400" />
-                <input
-                  type="text"
-                  value={sku}
-                  onChange={(e) => setSku(e.target.value.toUpperCase())}
-                  required
-                  placeholder="e.g. CH-001"
-                  className="w-full pl-8 pr-2.5 py-1.5 text-xs font-mono template-input border border-slate-200 dark:border-white/[0.08] rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-accent-orange/30 uppercase"
-                />
-              </div>
-            </div>
 
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                HSN Code
-              </label>
-              <input
-                type="text"
-                value={hsnCode}
-                onChange={(e) => setHsnCode(e.target.value)}
-                placeholder="e.g. 3926"
-                className="w-full px-3 py-1.5 text-xs font-mono template-input border border-slate-200 dark:border-white/[0.08] rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-accent-orange/30"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                GST Rate (%)
-              </label>
-              <div className="relative">
-                <Percent className="w-3.5 h-3.5 absolute left-2.5 top-2.5 text-slate-400" />
-                <select
-                  value={gstRate}
-                  onChange={(e) => setGstRate(e.target.value)}
-                  className="w-full pl-8 pr-2.5 py-1.5 text-xs template-input border border-slate-200 dark:border-white/[0.08] rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-accent-orange/30"
-                >
-                  <option value="0">0% (Nil)</option>
-                  <option value="5">5%</option>
-                  <option value="12">12%</option>
-                  <option value="18">18%</option>
-                  <option value="28">28%</option>
-                </select>
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                Unit (UOM) *
-              </label>
-              <select
-                value={unit}
-                onChange={(e) => setUnit(normalizeUnitCode(e.target.value))}
-                className="w-full px-3 py-1.5 text-xs font-bold template-input border border-slate-200 dark:border-white/[0.08] rounded-xl text-accent-orange focus:outline-none focus:ring-2 focus:ring-accent-orange/30 uppercase"
-              >
-                {PREDEFINED_UNITS.map((u) => (
-                  <option key={u.code} value={u.code} className="bg-white dark:bg-[#12151D] text-slate-800 dark:text-slate-200">
-                    {u.code} ({u.label})
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          {/* Warehouse and Rack Location */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                Storage Facility / Warehouse
-              </label>
-              <div className="relative">
-                <Building2 className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" />
-                <select
-                  value={warehouseId}
-                  onChange={(e) => setWarehouseId(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2 text-xs template-input border border-slate-200 dark:border-white/[0.08] rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-accent-orange/30"
-                >
-                  <option value="">Unassigned</option>
-                  {availableWarehouses.map((wh) => (
-                    <option key={wh.id} value={wh.id} className="bg-white dark:bg-[#12151D]">
-                      {wh.name} ({wh.code})
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                Rack / Bin Location
-              </label>
-              <input
-                type="text"
-                value={rackLocation}
-                onChange={(e) => setRackLocation(e.target.value)}
-                placeholder="e.g. A-12-R3"
-                className="w-full px-3 py-2 text-xs template-input border border-slate-200 dark:border-white/[0.08] rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-accent-orange/30"
-              />
-            </div>
-          </div>
 
           {/* Stock Thresholds */}
           <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/[0.06] space-y-3">
@@ -843,7 +693,7 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Minimum Stock Threshold ({unit}) *
+                  Minimum Stock Threshold ({item.unit}) *
                 </label>
                 <input
                   type="number"
@@ -857,7 +707,7 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Recommended Reorder Quantity ({unit})
+                  Recommended Reorder Quantity ({item.unit})
                 </label>
                 <input
                   type="number"
@@ -875,7 +725,7 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({
             <div className="flex items-center gap-2">
               <Layers className="w-4 h-4 text-accent-orange" />
               <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200">
-                Packaging Conversions (Base Unit: {unit})
+                Packaging Conversions (Base Unit: {item.unit})
               </h4>
             </div>
             <div className="grid grid-cols-3 gap-3">
