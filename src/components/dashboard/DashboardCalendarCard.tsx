@@ -17,11 +17,16 @@ import {
   Edit2,
   Info,
   CalendarDays,
+  Package,
+  Boxes,
+  Filter,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { calendarService } from '../../services/calendarService';
 import { CalendarEvent, CalendarViewMode, CalendarEventType } from '../../types/calendar';
 import { useAuthStore } from '../../store/authStore';
+
+type EventFilterType = 'all' | 'stock' | 'business' | 'reminder';
 
 export const DashboardCalendarCard: React.FC = () => {
   const navigate = useNavigate();
@@ -34,6 +39,7 @@ export const DashboardCalendarCard: React.FC = () => {
   const [currentMonth, setCurrentMonth] = useState(todayIST.month); // 0-indexed
   const [selectedDateStr, setSelectedDateStr] = useState<string>(todayIST.dateString);
   const [viewMode, setViewMode] = useState<CalendarViewMode>('month');
+  const [eventFilter, setEventFilter] = useState<EventFilterType>('all');
 
   // Events
   const [events, setEvents] = useState<CalendarEvent[]>([]);
@@ -62,6 +68,35 @@ export const DashboardCalendarCard: React.FC = () => {
   useEffect(() => {
     loadEvents();
   }, []);
+
+  // Filter events based on active category filter
+  const filteredEvents = useMemo(() => {
+    if (eventFilter === 'all') return events;
+    if (eventFilter === 'stock') {
+      return events.filter((e) => e.type === 'stock_change' || e.type === 'product_update');
+    }
+    if (eventFilter === 'business') {
+      return events.filter((e) =>
+        ['invoice_due', 'purchase_expected', 'order_deadline', 'scheduled_transfer'].includes(e.type)
+      );
+    }
+    if (eventFilter === 'reminder') {
+      return events.filter((e) => e.type === 'user_reminder');
+    }
+    return events;
+  }, [events, eventFilter]);
+
+  // Counts for filter pills
+  const counts = useMemo(() => {
+    return {
+      all: events.length,
+      stock: events.filter((e) => e.type === 'stock_change' || e.type === 'product_update').length,
+      business: events.filter((e) =>
+        ['invoice_due', 'purchase_expected', 'order_deadline', 'scheduled_transfer'].includes(e.type)
+      ).length,
+      reminder: events.filter((e) => e.type === 'user_reminder').length,
+    };
+  }, [events]);
 
   // Month navigation
   const handlePrevMonth = () => {
@@ -107,13 +142,13 @@ export const DashboardCalendarCard: React.FC = () => {
   // Map events by date YYYY-MM-DD
   const eventsByDate = useMemo(() => {
     const map = new Map<string, CalendarEvent[]>();
-    events.forEach((ev) => {
+    filteredEvents.forEach((ev) => {
       const existing = map.get(ev.date) || [];
       existing.push(ev);
       map.set(ev.date, existing);
     });
     return map;
-  }, [events]);
+  }, [filteredEvents]);
 
   // Events on the currently selected date
   const selectedDayEvents = useMemo(() => {
@@ -123,6 +158,20 @@ export const DashboardCalendarCard: React.FC = () => {
   // Event type visual helpers
   const getEventBadge = (type: CalendarEventType) => {
     switch (type) {
+      case 'stock_change':
+        return {
+          bg: 'bg-emerald-500/15 border-emerald-500/30 text-emerald-600 dark:text-emerald-400',
+          dot: 'bg-emerald-500',
+          icon: <Package className="w-3.5 h-3.5 text-emerald-500" />,
+          label: 'Stock Change',
+        };
+      case 'product_update':
+        return {
+          bg: 'bg-cyan-500/15 border-cyan-500/30 text-cyan-600 dark:text-cyan-400',
+          dot: 'bg-cyan-500',
+          icon: <Boxes className="w-3.5 h-3.5 text-cyan-500" />,
+          label: 'Item Entry',
+        };
       case 'invoice_due':
         return {
           bg: 'bg-amber-500/15 border-amber-500/30 text-amber-600 dark:text-amber-400',
@@ -146,9 +195,9 @@ export const DashboardCalendarCard: React.FC = () => {
         };
       case 'scheduled_transfer':
         return {
-          bg: 'bg-emerald-500/15 border-emerald-500/30 text-emerald-600 dark:text-emerald-400',
-          dot: 'bg-emerald-500',
-          icon: <ArrowRightLeft className="w-3 h-3 text-emerald-500" />,
+          bg: 'bg-teal-500/15 border-teal-500/30 text-teal-600 dark:text-teal-400',
+          dot: 'bg-teal-500',
+          icon: <ArrowRightLeft className="w-3 h-3 text-teal-500" />,
           label: 'Transfer',
         };
       case 'user_reminder':
@@ -259,7 +308,7 @@ export const DashboardCalendarCard: React.FC = () => {
   return (
     <Card variant="glass" noPadding className="p-5 flex flex-col justify-between overflow-hidden shadow-xl">
       {/* Top Header & View Controls */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-3 border-b border-slate-100 dark:border-white/[0.06]">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3 pb-3 border-b border-slate-100 dark:border-white/[0.06]">
         <div>
           <div className="flex items-center gap-2">
             <h3 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-[#F2F4F8] tracking-tight flex items-center gap-2">
@@ -271,7 +320,7 @@ export const DashboardCalendarCard: React.FC = () => {
             </span>
           </div>
           <p className="text-xs text-slate-400 dark:text-[#9AA0AE] mt-0.5">
-            Real milestone ledger: due invoices, scheduled deliveries, order deadlines & local reminders
+            Real-time ledger: stock movements, product entries, invoice due dates, deliveries & reminders
           </p>
         </div>
 
@@ -332,6 +381,56 @@ export const DashboardCalendarCard: React.FC = () => {
             Add Reminder
           </Button>
         </div>
+      </div>
+
+      {/* Event Category Filter Bar */}
+      <div className="flex items-center gap-1.5 flex-wrap mb-3 pb-2 border-b border-slate-100 dark:border-white/[0.04]">
+        <span className="text-[11px] font-semibold text-slate-400 flex items-center gap-1 mr-1">
+          <Filter className="w-3 h-3 text-brand-orange" /> Filter:
+        </span>
+        <button
+          onClick={() => setEventFilter('all')}
+          className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all ${
+            eventFilter === 'all'
+              ? 'bg-brand-orange text-white shadow-sm'
+              : 'bg-slate-100 dark:bg-white/[0.05] text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-white/10'
+          }`}
+        >
+          All Activity ({counts.all})
+        </button>
+        <button
+          onClick={() => setEventFilter('stock')}
+          className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
+            eventFilter === 'stock'
+              ? 'bg-emerald-600 text-white shadow-sm'
+              : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20'
+          }`}
+        >
+          <Package className="w-3.5 h-3.5" />
+          <span>Stock & Products ({counts.stock})</span>
+        </button>
+        <button
+          onClick={() => setEventFilter('business')}
+          className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
+            eventFilter === 'business'
+              ? 'bg-blue-600 text-white shadow-sm'
+              : 'bg-blue-500/10 text-blue-600 dark:text-blue-400 hover:bg-blue-500/20'
+          }`}
+        >
+          <FileText className="w-3.5 h-3.5" />
+          <span>Invoices & POs ({counts.business})</span>
+        </button>
+        <button
+          onClick={() => setEventFilter('reminder')}
+          className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
+            eventFilter === 'reminder'
+              ? 'bg-amber-600 text-white shadow-sm'
+              : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20'
+          }`}
+        >
+          <Bell className="w-3.5 h-3.5" />
+          <span>Reminders ({counts.reminder})</span>
+        </button>
       </div>
 
       {/* Main Calendar Viewport */}
@@ -402,13 +501,16 @@ export const DashboardCalendarCard: React.FC = () => {
                           key={ev.id}
                           onClick={(e) => {
                             e.stopPropagation();
+                            setSelectedDateStr(dateStr);
                             handleEventClick(ev);
                           }}
                           className={`text-[9.5px] sm:text-[10px] truncate px-1.5 py-0.5 rounded-md font-medium border flex items-center gap-1 hover:brightness-110 transition-all ${badge.bg}`}
-                          title={`${badge.label}: ${ev.title}`}
+                          title={`${ev.time ? `[${ev.time}] ` : ''}${badge.label}: ${ev.title}`}
                         >
                           <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${badge.dot}`} />
-                          <span className="truncate">{ev.title}</span>
+                          <span className="truncate">
+                            {ev.time ? `${ev.time.split(' ')[0]} ` : ''}{ev.title}
+                          </span>
                         </div>
                       );
                     })}
@@ -467,6 +569,7 @@ export const DashboardCalendarCard: React.FC = () => {
                           key={ev.id}
                           onClick={(e) => {
                             e.stopPropagation();
+                            setSelectedDateStr(w.dateString);
                             handleEventClick(ev);
                           }}
                           className={`p-1.5 rounded-xl border text-[11px] hover:brightness-110 transition-all ${badge.bg}`}
@@ -476,6 +579,12 @@ export const DashboardCalendarCard: React.FC = () => {
                             {badge.icon}
                             <span className="truncate">{ev.title}</span>
                           </div>
+                          {ev.time && (
+                            <p className="text-[10px] font-mono opacity-80 mt-0.5 flex items-center gap-1">
+                              <Clock className="w-2.5 h-2.5" />
+                              <span>{ev.time}</span>
+                            </p>
+                          )}
                           {ev.description && (
                             <p className="text-[10px] opacity-75 truncate mt-0.5">{ev.description}</p>
                           )}
@@ -511,7 +620,7 @@ export const DashboardCalendarCard: React.FC = () => {
           <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-white/[0.06]">
             <div>
               <p className="text-xs text-brand-orange font-bold uppercase tracking-wider">
-                {selectedDateStr === todayIST.dateString ? 'Today • ' : ''}Focused Date View
+                {selectedDateStr === todayIST.dateString ? 'Today • ' : ''}Detailed Ledger Timeline
               </p>
               <h4 className="text-lg font-extrabold text-slate-900 dark:text-[#F2F4F8]">
                 {new Date(selectedDateStr).toLocaleDateString('en-IN', {
@@ -532,63 +641,133 @@ export const DashboardCalendarCard: React.FC = () => {
             </Button>
           </div>
 
-          <div className="space-y-2.5">
+          <div className="space-y-3">
             {selectedDayEvents.length > 0 ? (
               selectedDayEvents.map((ev) => {
                 const badge = getEventBadge(ev.type);
                 return (
                   <div
                     key={ev.id}
-                    className="p-3.5 rounded-xl bg-white dark:bg-[#12151D] border border-slate-200/80 dark:border-white/[0.06] flex items-center justify-between gap-3 shadow-sm hover:border-brand-orange/40 transition-colors"
+                    className="p-3.5 rounded-xl bg-white dark:bg-[#12151D] border border-slate-200/80 dark:border-white/[0.06] shadow-sm hover:border-brand-orange/40 transition-colors space-y-2.5"
                   >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 border ${badge.bg}`}>
-                        {badge.icon}
-                      </div>
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <p className="font-bold text-xs sm:text-sm text-slate-900 dark:text-[#F2F4F8] truncate">
-                            {ev.title}
-                          </p>
-                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase border ${badge.bg}`}>
-                            {badge.label}
-                          </span>
+                    {/* Header: Badge, Title & Exact Time */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 border ${badge.bg}`}>
+                          {badge.icon}
                         </div>
-                        {ev.description && (
-                          <p className="text-xs text-slate-400 mt-0.5 truncate">{ev.description}</p>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase border ${badge.bg}`}>
+                              {badge.label}
+                            </span>
+                            <h5 className="font-bold text-xs sm:text-sm text-slate-900 dark:text-[#F2F4F8] truncate">
+                              {ev.title}
+                            </h5>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        {ev.time ? (
+                          <span className="inline-flex items-center gap-1 text-[11px] font-mono font-semibold px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-white/[0.08] text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-white/[0.08]">
+                            <Clock className="w-3.5 h-3.5 text-brand-orange" />
+                            <span>{ev.time}</span>
+                          </span>
+                        ) : (
+                          <span className="text-[11px] text-slate-400 font-medium">All Day</span>
+                        )}
+
+                        {ev.linkedPath ? (
+                          <button
+                            onClick={() => navigate(ev.linkedPath!)}
+                            className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-brand-orange/15 text-brand-orange hover:bg-brand-orange hover:text-white transition-colors flex items-center gap-1.5"
+                            title="Open linked system record"
+                          >
+                            <span>Open Record</span>
+                            <ExternalLink className="w-3.5 h-3.5" />
+                          </button>
+                        ) : (
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={() => handleOpenEditReminder(ev)}
+                              className="p-1.5 text-slate-400 hover:text-white hover:bg-white/10 rounded-lg transition"
+                              title="Edit Reminder"
+                            >
+                              <Edit2 className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteReminder(ev.id)}
+                              className="p-1.5 text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 rounded-lg transition"
+                              title="Delete Reminder"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
                         )}
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                      {ev.linkedPath ? (
-                        <button
-                          onClick={() => navigate(ev.linkedPath!)}
-                          className="px-3 py-1 text-xs font-semibold rounded-lg bg-brand-orange/15 text-brand-orange hover:bg-brand-orange hover:text-white transition-colors flex items-center gap-1.5"
-                          title="Open linked system record"
-                        >
-                          <span>Open Record</span>
-                          <ExternalLink className="w-3.5 h-3.5" />
-                        </button>
-                      ) : (
-                        <>
-                          <button
-                            onClick={() => handleOpenEditReminder(ev)}
-                            className="p-1.5 text-slate-400 hover:text-white hover:bg-white/10 rounded-lg transition"
-                            title="Edit Reminder"
-                          >
-                            <Edit2 className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteReminder(ev.id)}
-                            className="p-1.5 text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 rounded-lg transition"
-                            title="Delete Reminder"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </>
-                      )}
-                    </div>
+                    {/* Rich Stock Change & Product Details */}
+                    {ev.stockChangeDetails ? (
+                      <div className="p-2.5 rounded-lg bg-slate-50 dark:bg-white/[0.02] border border-slate-100 dark:border-white/[0.04] text-xs space-y-1.5">
+                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+                          {ev.stockChangeDetails.delta !== undefined && (
+                            <div className="flex items-center gap-1">
+                              <span className="text-slate-400 text-[11px]">Quantity:</span>
+                              <span
+                                className={`font-bold px-1.5 py-0.2 rounded font-mono ${
+                                  ev.stockChangeDetails.delta > 0
+                                    ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400'
+                                    : ev.stockChangeDetails.delta < 0
+                                    ? 'bg-rose-500/20 text-rose-600 dark:text-rose-400'
+                                    : 'bg-amber-500/20 text-amber-600 dark:text-amber-400'
+                                }`}
+                              >
+                                {ev.stockChangeDetails.delta > 0 ? `+${ev.stockChangeDetails.delta}` : ev.stockChangeDetails.delta}{' '}
+                                {ev.stockChangeDetails.unit || 'PCS'}
+                              </span>
+                            </div>
+                          )}
+
+                          {ev.stockChangeDetails.previousStock !== undefined && ev.stockChangeDetails.newStock !== undefined && (
+                            <div className="flex items-center gap-1 text-[11px] text-slate-600 dark:text-slate-300">
+                              <span className="text-slate-400">Inventory Level:</span>
+                              <span className="font-semibold">{ev.stockChangeDetails.previousStock}</span>
+                              <span className="text-slate-400">➔</span>
+                              <span className="font-bold text-brand-orange">
+                                {ev.stockChangeDetails.newStock} {ev.stockChangeDetails.unit || 'PCS'}
+                              </span>
+                            </div>
+                          )}
+
+                          {ev.stockChangeDetails.itemSku && (
+                            <div className="flex items-center gap-1 text-[11px]">
+                              <span className="text-slate-400">SKU:</span>
+                              <span className="font-mono text-slate-700 dark:text-slate-300">{ev.stockChangeDetails.itemSku}</span>
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-slate-500 dark:text-slate-400 pt-0.5 border-t border-slate-100 dark:border-white/[0.03]">
+                          {ev.stockChangeDetails.reason && (
+                            <span><strong>Reason:</strong> {ev.stockChangeDetails.reason}</span>
+                          )}
+                          {ev.stockChangeDetails.user && (
+                            <span><strong>Logged By:</strong> {ev.stockChangeDetails.user}</span>
+                          )}
+                          {ev.stockChangeDetails.referenceNumber && (
+                            <span><strong>Reference:</strong> {ev.stockChangeDetails.referenceNumber}</span>
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      ev.description && (
+                        <p className="text-xs text-slate-400 bg-slate-50 dark:bg-white/[0.02] p-2 rounded-lg border border-slate-100 dark:border-white/[0.04]">
+                          {ev.description}
+                        </p>
+                      )
+                    )}
                   </div>
                 );
               })
@@ -596,7 +775,7 @@ export const DashboardCalendarCard: React.FC = () => {
               <div className="py-8 text-center text-slate-400">
                 <CalendarDays className="w-8 h-8 mx-auto text-slate-400 mb-2" />
                 <p className="text-xs font-semibold text-slate-600 dark:text-slate-300">
-                  No scheduled milestones or reminders on this date.
+                  No inventory changes or operational milestones logged on this date.
                 </p>
                 <p className="text-[11px] text-slate-500 mt-0.5">
                   Click "+ New Reminder for Date" to log an operational follow-up.
@@ -607,13 +786,18 @@ export const DashboardCalendarCard: React.FC = () => {
         </div>
       )}
 
-      {/* Selected Day Agenda Drawer when in Month View */}
-      {viewMode === 'month' && selectedDayEvents.length > 0 && (
-        <div className="mt-4 pt-3 border-t border-slate-100 dark:border-white/[0.04]">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
-              Agenda for {new Date(selectedDateStr).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' })} ({selectedDayEvents.length} items)
-            </span>
+      {/* Selected Day Agenda Drawer (when in Month View) */}
+      {viewMode === 'month' && (
+        <div className="mt-4 pt-3 border-t border-slate-100 dark:border-white/[0.04] space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                Activity for {new Date(selectedDateStr).toLocaleDateString('en-IN', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
+              </span>
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-brand-orange/15 text-brand-orange">
+                {selectedDayEvents.length} {selectedDayEvents.length === 1 ? 'event' : 'events'}
+              </span>
+            </div>
             <button
               onClick={() => handleOpenAddReminder(selectedDateStr)}
               className="text-xs text-brand-orange hover:underline font-semibold"
@@ -622,44 +806,102 @@ export const DashboardCalendarCard: React.FC = () => {
             </button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-            {selectedDayEvents.map((ev) => {
-              const badge = getEventBadge(ev.type);
-              return (
-                <div
-                  key={ev.id}
-                  onClick={() => handleEventClick(ev)}
-                  className={`p-2.5 rounded-xl border flex items-center justify-between gap-2 cursor-pointer transition-all hover:scale-[1.01] ${badge.bg}`}
-                >
-                  <div className="flex items-center gap-2 min-w-0">
-                    {badge.icon}
-                    <div className="min-w-0">
-                      <p className="text-xs font-bold truncate">{ev.title}</p>
-                      {ev.description && (
-                        <p className="text-[10px] opacity-80 truncate">{ev.description}</p>
+          {selectedDayEvents.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+              {selectedDayEvents.map((ev) => {
+                const badge = getEventBadge(ev.type);
+                return (
+                  <div
+                    key={ev.id}
+                    onClick={() => handleEventClick(ev)}
+                    className={`p-3 rounded-xl border flex flex-col justify-between gap-2 cursor-pointer transition-all hover:scale-[1.01] ${badge.bg}`}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center gap-2 min-w-0">
+                        {badge.icon}
+                        <div className="min-w-0">
+                          <p className="text-xs font-bold truncate">{ev.title}</p>
+                          <span className="text-[9.5px] uppercase font-bold tracking-wider opacity-80">
+                            {badge.label}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Time Badge */}
+                      {ev.time && (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-mono font-semibold px-2 py-0.5 rounded-md bg-white/40 dark:bg-white/10 flex-shrink-0">
+                          <Clock className="w-3 h-3 text-brand-orange" />
+                          <span>{ev.time}</span>
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Stock Detail or Description */}
+                    {ev.stockChangeDetails ? (
+                      <div className="text-[11px] pt-1 border-t border-white/10 space-y-0.5">
+                        <div className="flex items-center justify-between">
+                          <span>
+                            {ev.stockChangeDetails.previousStock !== undefined && ev.stockChangeDetails.newStock !== undefined
+                              ? `Stock: ${ev.stockChangeDetails.previousStock} ➔ ${ev.stockChangeDetails.newStock} ${ev.stockChangeDetails.unit || 'PCS'}`
+                              : ev.stockChangeDetails.reason}
+                          </span>
+                          {ev.stockChangeDetails.delta !== undefined && (
+                            <span className="font-bold font-mono">
+                              {ev.stockChangeDetails.delta > 0 ? `+${ev.stockChangeDetails.delta}` : ev.stockChangeDetails.delta}
+                            </span>
+                          )}
+                        </div>
+                        {ev.stockChangeDetails.user && (
+                          <p className="text-[10px] opacity-75 truncate">
+                            By {ev.stockChangeDetails.user} {ev.stockChangeDetails.reason ? `• ${ev.stockChangeDetails.reason}` : ''}
+                          </p>
+                        )}
+                      </div>
+                    ) : (
+                      ev.description && (
+                        <p className="text-[10.5px] opacity-80 truncate pt-1 border-t border-white/10">
+                          {ev.description}
+                        </p>
+                      )
+                    )}
+
+                    <div className="flex items-center justify-between pt-1 border-t border-white/10 text-[10px]">
+                      <span className="opacity-70">
+                        {ev.stockChangeDetails?.referenceNumber || (ev.isSystemEvent ? 'System Record' : 'User Reminder')}
+                      </span>
+                      {ev.linkedPath ? (
+                        <span className="flex items-center gap-1 font-semibold text-brand-orange">
+                          <span>View Details</span>
+                          <ExternalLink className="w-3 h-3" />
+                        </span>
+                      ) : (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteReminder(ev.id);
+                          }}
+                          className="hover:text-rose-500 transition-colors"
+                          title="Delete reminder"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
                       )}
                     </div>
                   </div>
-                  {ev.linkedPath ? (
-                    <ExternalLink className="w-3.5 h-3.5 flex-shrink-0 opacity-75" />
-                  ) : (
-                    <div className="flex items-center gap-1 flex-shrink-0">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeleteReminder(ev.id);
-                        }}
-                        className="p-1 hover:text-rose-500 transition-colors"
-                        title="Delete reminder"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="p-4 rounded-xl bg-slate-50/50 dark:bg-white/[0.02] border border-dashed border-slate-200 dark:border-white/[0.06] text-center text-xs text-slate-400">
+              <span>No stock changes or milestones recorded for this date. </span>
+              <button
+                onClick={() => handleOpenAddReminder(selectedDateStr)}
+                className="text-brand-orange font-semibold hover:underline"
+              >
+                Click to add an operational reminder
+              </button>
+            </div>
+          )}
         </div>
       )}
 
@@ -667,9 +909,9 @@ export const DashboardCalendarCard: React.FC = () => {
       <div className="mt-4 pt-2.5 border-t border-slate-100 dark:border-white/[0.04] flex items-center justify-between text-[11px] text-slate-400">
         <div className="flex items-center gap-1.5">
           <Info className="w-3.5 h-3.5 text-brand-orange flex-shrink-0" />
-          <span>Milestones are generated dynamically from live invoices, purchase orders and transfers.</span>
+          <span>Real-time sync: stock adjustments, product entries, invoice milestones & deliveries appear automatically.</span>
         </div>
-        <span className="hidden sm:inline text-slate-500">Local terminal persistence</span>
+        <span className="hidden sm:inline text-slate-500">Asia/Kolkata (IST)</span>
       </div>
 
       {/* Add / Edit Reminder Modal */}
