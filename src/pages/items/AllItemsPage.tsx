@@ -10,7 +10,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Printer,
-  ArrowRightLeft,
   Edit,
   Trash2,
 } from 'lucide-react';
@@ -23,7 +22,6 @@ import { AddItemModal } from '../../components/dashboard/AddItemModal';
 import { EditItemModal } from '../../components/itemDetail/EditItemModal';
 import { ProductImage } from '../../components/common/ProductImage';
 import { BarcodeLabelModal } from '../../components/itemDetail/BarcodeLabelModal';
-import { TransferStockModal } from '../../components/itemDetail/TransferStockModal';
 import { QuickStockAdjustmentModal } from '../../components/dashboard/QuickStockAdjustmentModal';
 import { useAuthStore } from '../../store/authStore';
 
@@ -57,7 +55,6 @@ export const AllItemsPage: React.FC = () => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [selectedItemForEdit, setSelectedItemForEdit] = useState<ComputedInventoryItem | null>(null);
   const [selectedItemForLabel, setSelectedItemForLabel] = useState<ComputedInventoryItem | null>(null);
-  const [selectedItemForTransfer, setSelectedItemForTransfer] = useState<ComputedInventoryItem | null>(null);
   const [adjustmentItem, setAdjustmentItem] = useState<ComputedInventoryItem | null>(null);
   const [adjustmentMode, setAdjustmentMode] = useState<'add' | 'deduct' | 'direct'>('add');
   const [itemToDelete, setItemToDelete] = useState<ComputedInventoryItem | null>(null);
@@ -441,13 +438,6 @@ export const AllItemsPage: React.FC = () => {
                           <Edit className="w-4 h-4" />
                         </button>
                         <button
-                          onClick={() => setSelectedItemForTransfer(item)}
-                          className="p-1.5 text-slate-400 hover:text-white hover:bg-white/10 rounded-lg transition"
-                          title="Transfer Stock"
-                        >
-                          <ArrowRightLeft className="w-4 h-4" />
-                        </button>
-                        <button
                           onClick={() => setSelectedItemForLabel(item)}
                           className="p-1.5 text-slate-400 hover:text-white hover:bg-white/10 rounded-lg transition"
                           title="Print Barcode Label"
@@ -565,17 +555,6 @@ export const AllItemsPage: React.FC = () => {
           item={selectedItemForLabel}
           isOpen={!!selectedItemForLabel}
           onClose={() => setSelectedItemForLabel(null)}
-        />
-      )}
-
-      {selectedItemForTransfer && (
-        <TransferStockModal
-          item={selectedItemForTransfer}
-          isOpen={!!selectedItemForTransfer}
-          onClose={() => setSelectedItemForTransfer(null)}
-          onTransferComplete={() => {
-            inventoryService.getItems({ page, pageSize: 20 }).then((res) => setItems(res.items));
-          }}
         />
       )}
 
