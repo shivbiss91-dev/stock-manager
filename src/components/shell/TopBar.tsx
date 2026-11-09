@@ -9,6 +9,7 @@ import {
 import { Logo } from '../common/Logo';
 import { Breadcrumbs } from './Breadcrumbs';
 import { NotificationPanel } from './NotificationPanel';
+import { UserMenu } from './UserMenu';
 import { useUIStore } from '../../store/uiStore';
 import { useThemeStore } from '../../store/themeStore';
 import { useNotificationStore } from '../../store/notificationStore';
@@ -64,7 +65,7 @@ export const TopBar: React.FC = () => {
           {/* Global Search Square Button */}
           <button
             onClick={() => setGlobalSearchOpen(true)}
-            className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-[#1A1D26] border border-slate-200 dark:border-white/[0.08] hover:bg-slate-200 dark:hover:bg-white/10 text-slate-600 dark:text-[#9AA0AE] hover:text-slate-900 dark:hover:text-white flex items-center justify-center transition-all group"
+            className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-[#1A1D26] border border-slate-200 dark:border-white/[0.08] hover:bg-slate-200 dark:hover:bg-white/10 text-slate-600 dark:text-[#9AA0AE] hover:text-slate-900 dark:hover:text-white flex items-center justify-center transition-all group cursor-pointer"
             title="Search products, invoices, customers (Ctrl+K)"
             aria-label="Search"
           >
@@ -75,7 +76,7 @@ export const TopBar: React.FC = () => {
           <div className="relative">
             <button
               onClick={() => setNotificationsPanelOpen(!notificationsPanelOpen)}
-              className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-[#1A1D26] border border-slate-200 dark:border-white/[0.08] hover:bg-slate-200 dark:hover:bg-white/10 text-slate-600 dark:text-[#9AA0AE] hover:text-slate-900 dark:hover:text-white flex items-center justify-center transition-all relative group"
+              className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-[#1A1D26] border border-slate-200 dark:border-white/[0.08] hover:bg-slate-200 dark:hover:bg-white/10 text-slate-600 dark:text-[#9AA0AE] hover:text-slate-900 dark:hover:text-white flex items-center justify-center transition-all relative group cursor-pointer"
               title="Notifications"
               aria-label="Open notifications panel"
             >
@@ -94,7 +95,7 @@ export const TopBar: React.FC = () => {
           {/* Theme Toggle Square Button */}
           <button
             onClick={toggleTheme}
-            className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-[#1A1D26] border border-slate-200 dark:border-white/[0.08] hover:bg-slate-200 dark:hover:bg-white/10 text-slate-600 dark:text-[#9AA0AE] hover:text-slate-900 dark:hover:text-white flex items-center justify-center transition-all"
+            className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-[#1A1D26] border border-slate-200 dark:border-white/[0.08] hover:bg-slate-200 dark:hover:bg-white/10 text-slate-600 dark:text-[#9AA0AE] hover:text-slate-900 dark:hover:text-white flex items-center justify-center transition-all cursor-pointer"
             title={theme === 'dark' ? 'Switch to Light Theme' : 'Switch to Dark Theme'}
             aria-label="Toggle theme"
           >
@@ -105,23 +106,10 @@ export const TopBar: React.FC = () => {
             )}
           </button>
 
-          {/* User Avatar tile (Solid Orange Accent #FF6B35) */}
+          {/* User Avatar tile & Interactive Profile Menu */}
           {user && (
             <div className="pl-1">
-              <div
-                className="w-10 h-10 rounded-xl bg-brand-orange text-white font-bold flex items-center justify-center text-xs shadow-sm ring-1 ring-white/20 select-none cursor-default"
-                title={`${user.name} (${user.role})`}
-              >
-                {user.avatar ? (
-                  <img
-                    src={user.avatar}
-                    alt={user.name}
-                    className="w-full h-full rounded-xl object-cover"
-                  />
-                ) : (
-                  user.name.charAt(0)
-                )}
-              </div>
+              <UserMenu placement="topbar" />
             </div>
           )}
         </div>

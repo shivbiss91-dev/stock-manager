@@ -215,7 +215,7 @@ export const Sidebar: React.FC = () => {
         {/* Rail Bottom: User Avatar Tile */}
         <div className={`p-3 border-t border-slate-200/80 dark:border-white/[0.06] flex-shrink-0 space-y-2 ${isCollapsed ? 'flex flex-col items-center' : ''}`}>
           {/* User Avatar tile & Profile Menu */}
-          <UserMenu collapsed={isCollapsed} />
+          <UserMenu collapsed={isCollapsed} placement="sidebar" />
         </div>
       </div>
     );
