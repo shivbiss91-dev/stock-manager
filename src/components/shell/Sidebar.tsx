@@ -14,7 +14,7 @@ import { Logo } from '../common/Logo';
 import { UserMenu } from './UserMenu';
 import { useUIStore } from '../../store/uiStore';
 import { useAuthStore } from '../../store/authStore';
-import { Role } from '../../types/auth';
+import { Role, AppPermissionModule } from '../../types/auth';
 import { useTranslation } from 'react-i18next';
 
 interface NavItem {
@@ -23,6 +23,7 @@ interface NavItem {
   path: string;
   icon: React.ReactNode;
   allowedRoles?: Role[];
+  moduleId?: AppPermissionModule;
   badge?: string | number;
   badgeColor?: string;
   subItems?: { label: string; path: string }[];
@@ -32,7 +33,7 @@ export const Sidebar: React.FC = () => {
   const { t } = useTranslation();
   const location = useLocation();
   const { sidebarCollapsed, toggleSidebar, mobileSidebarOpen, setMobileSidebarOpen } = useUIStore();
-  const { user } = useAuthStore();
+  const { user, hasModulePermission } = useAuthStore();
   const [openSubmenus, setOpenSubmenus] = useState<Record<string, boolean>>({});
 
   const toggleSubmenu = (key: string) => {
@@ -44,12 +45,14 @@ export const Sidebar: React.FC = () => {
       id: 'dashboard',
       label: t('nav.dashboard', 'Dashboard'),
       path: '/dashboard',
+      moduleId: 'module_dashboard',
       icon: <LayoutDashboard className="w-5 h-5" strokeWidth={1.5} />,
     },
     {
       id: 'items',
       label: t('nav.items', 'Items'),
       path: '/items',
+      moduleId: 'module_items',
       icon: <Package className="w-5 h-5" strokeWidth={1.5} />,
     },
     {
@@ -62,9 +65,17 @@ export const Sidebar: React.FC = () => {
   ];
 
   const currentRole = user?.role || 'viewer';
-  const visibleNavItems = navItems.filter(
-    (item) => !item.allowedRoles || item.allowedRoles.includes(currentRole)
-  );
+  const visibleNavItems = navItems.filter((item) => {
+    if (item.allowedRoles && !item.allowedRoles.includes(currentRole)) {
+      return false;
+    }
+    if (item.moduleId && !hasModulePermission(item.moduleId)) {
+      return false;
+    }
+    return true;
+  });
+
+  const canAccessSettings = hasModulePermission('module_settings');
 
   const renderContent = (isMobile = false) => {
     const isCollapsed = !isMobile && sidebarCollapsed;
@@ -206,24 +217,26 @@ export const Sidebar: React.FC = () => {
 
         {/* Rail Bottom: Settings Cog + User Avatar Tile */}
         <div className={`p-3 border-t border-slate-200/80 dark:border-white/[0.06] flex-shrink-0 space-y-2 ${isCollapsed ? 'flex flex-col items-center' : ''}`}>
-          {/* Settings Nav Item */}
-          <NavLink
-            to="/settings"
-            onClick={() => isMobile && setMobileSidebarOpen(false)}
-            className={({ isActive }) =>
-              `flex items-center ${
-                isCollapsed ? 'justify-center w-11 h-11' : 'gap-3 px-3 py-2'
-              } rounded-xl text-xs font-semibold transition-all ${
-                isActive
-                  ? 'bg-brand-orange/15 text-brand-orange border border-brand-orange/40'
-                  : 'text-slate-500 dark:text-[#9AA0AE] hover:bg-slate-100 dark:hover:bg-white/[0.05] hover:text-slate-900 dark:hover:text-white'
-              }`
-            }
-            title={isCollapsed ? 'Settings' : undefined}
-          >
-            <Settings className="w-5 h-5" strokeWidth={1.5} />
-            {!isCollapsed && <span>Settings</span>}
-          </NavLink>
+          {/* Settings Nav Item - Only shown if authorized */}
+          {canAccessSettings && (
+            <NavLink
+              to="/settings"
+              onClick={() => isMobile && setMobileSidebarOpen(false)}
+              className={({ isActive }) =>
+                `flex items-center ${
+                  isCollapsed ? 'justify-center w-11 h-11' : 'gap-3 px-3 py-2'
+                } rounded-xl text-xs font-semibold transition-all ${
+                  isActive
+                    ? 'bg-brand-orange/15 text-brand-orange border border-brand-orange/40'
+                    : 'text-slate-500 dark:text-[#9AA0AE] hover:bg-slate-100 dark:hover:bg-white/[0.05] hover:text-slate-900 dark:hover:text-white'
+                }`
+              }
+              title={isCollapsed ? 'Settings' : undefined}
+            >
+              <Settings className="w-5 h-5" strokeWidth={1.5} />
+              {!isCollapsed && <span>Settings</span>}
+            </NavLink>
+          )}
 
           {/* User Avatar tile & Profile Menu */}
           <UserMenu collapsed={isCollapsed} />

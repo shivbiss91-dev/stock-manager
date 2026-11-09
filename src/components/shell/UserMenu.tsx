@@ -206,7 +206,8 @@ export const UserMenu: React.FC<UserMenuProps> = ({ collapsed = false }) => {
                 )}
               </div>
 
-              {/* Role switcher (For ERP testing) */}
+              {/* Role switcher (For ERP testing - Administrator only) */}
+              {user.role === 'admin' && (
               <div>
                 <button
                   onClick={() => setShowRoleSubmenu(!showRoleSubmenu)}
@@ -249,6 +250,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ collapsed = false }) => {
                   </div>
                 )}
               </div>
+              )}
 
               {/* Reset Demo Data (Visible strictly in Demo Mode) */}
               {user.isDemo && (

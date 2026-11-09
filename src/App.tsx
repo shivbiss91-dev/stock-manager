@@ -42,22 +42,57 @@ export const App: React.FC = () => {
           }
         >
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
-          <Route path="/dashboard" element={<DashboardPage />} />
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute requiredModule="module_dashboard">
+                <DashboardPage />
+              </ProtectedRoute>
+            }
+          />
 
           {/* Item & Product Routes */}
-          <Route path="/items" element={<AllItemsPage />} />
-          <Route path="/items/:itemId" element={<ItemDetailPage />} />
+          <Route
+            path="/items"
+            element={
+              <ProtectedRoute requiredModule="module_items">
+                <AllItemsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/items/:itemId"
+            element={
+              <ProtectedRoute requiredModule="module_items">
+                <ItemDetailPage />
+              </ProtectedRoute>
+            }
+          />
           <Route path="/materials" element={<Navigate to="/items" replace />} />
 
           {/* Warehouses & Movements */}
-          <Route path="/warehouses" element={<WarehousesPage />} />
-          <Route path="/stock-movements" element={<StockMovementsPage />} />
+          <Route
+            path="/warehouses"
+            element={
+              <ProtectedRoute requiredModule="module_warehouses">
+                <WarehousesPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/stock-movements"
+            element={
+              <ProtectedRoute requiredModule="module_stock">
+                <StockMovementsPage />
+              </ProtectedRoute>
+            }
+          />
 
-          {/* Sales & Invoicing (Phase 5 & 6) */}
+          {/* Invoicing Routes */}
           <Route
             path="/sales/invoices"
             element={
-              <ProtectedRoute allowedRoles={['admin', 'manager', 'staff']}>
+              <ProtectedRoute requiredModule="module_invoices" allowedRoles={['admin', 'manager', 'staff']}>
                 <InvoicesListPage />
               </ProtectedRoute>
             }
@@ -65,7 +100,7 @@ export const App: React.FC = () => {
           <Route
             path="/sales/invoices/new"
             element={
-              <ProtectedRoute allowedRoles={['admin', 'manager', 'staff']}>
+              <ProtectedRoute requiredModule="module_invoices" allowedRoles={['admin', 'manager', 'staff']}>
                 <CreateInvoicePage />
               </ProtectedRoute>
             }
@@ -73,15 +108,17 @@ export const App: React.FC = () => {
           <Route
             path="/sales/invoices/create"
             element={
-              <ProtectedRoute allowedRoles={['admin', 'manager', 'staff']}>
+              <ProtectedRoute requiredModule="module_invoices" allowedRoles={['admin', 'manager', 'staff']}>
                 <CreateInvoicePage />
               </ProtectedRoute>
             }
           />
+
+          {/* Orders & Quotations */}
           <Route
             path="/sales/quotations"
             element={
-              <ProtectedRoute allowedRoles={['admin', 'manager', 'staff']}>
+              <ProtectedRoute requiredModule="module_orders" allowedRoles={['admin', 'manager', 'staff']}>
                 <QuotationsPage />
               </ProtectedRoute>
             }
@@ -89,7 +126,7 @@ export const App: React.FC = () => {
           <Route
             path="/sales/orders"
             element={
-              <ProtectedRoute allowedRoles={['admin', 'manager', 'staff']}>
+              <ProtectedRoute requiredModule="module_orders" allowedRoles={['admin', 'manager', 'staff']}>
                 <SalesOrdersPage />
               </ProtectedRoute>
             }
@@ -97,17 +134,17 @@ export const App: React.FC = () => {
           <Route
             path="/sales/returns"
             element={
-              <ProtectedRoute allowedRoles={['admin', 'manager', 'staff']}>
+              <ProtectedRoute requiredModule="module_orders" allowedRoles={['admin', 'manager', 'staff']}>
                 <SalesReturnsPage />
               </ProtectedRoute>
             }
           />
 
-          {/* Purchases & Transfers (Phase 6) */}
+          {/* Purchases */}
           <Route
             path="/purchases/orders"
             element={
-              <ProtectedRoute allowedRoles={['admin', 'manager', 'staff']}>
+              <ProtectedRoute requiredModule="module_orders" allowedRoles={['admin', 'manager', 'staff']}>
                 <PurchaseOrdersPage />
               </ProtectedRoute>
             }
@@ -115,7 +152,7 @@ export const App: React.FC = () => {
           <Route
             path="/purchases/grn"
             element={
-              <ProtectedRoute allowedRoles={['admin', 'manager', 'staff']}>
+              <ProtectedRoute requiredModule="module_orders" allowedRoles={['admin', 'manager', 'staff']}>
                 <GoodsReceivedPage />
               </ProtectedRoute>
             }
@@ -123,7 +160,7 @@ export const App: React.FC = () => {
           <Route
             path="/purchases/bills"
             element={
-              <ProtectedRoute allowedRoles={['admin', 'manager', 'staff']}>
+              <ProtectedRoute requiredModule="module_invoices" allowedRoles={['admin', 'manager', 'staff']}>
                 <SupplierBillsPage />
               </ProtectedRoute>
             }
@@ -131,13 +168,13 @@ export const App: React.FC = () => {
           <Route
             path="/transfers"
             element={
-              <ProtectedRoute allowedRoles={['admin', 'manager', 'staff']}>
+              <ProtectedRoute requiredModule="module_transfers" allowedRoles={['admin', 'manager', 'staff']}>
                 <TransfersPage />
               </ProtectedRoute>
             }
           />
 
-          {/* Customers & Suppliers (Phase 6) */}
+          {/* Customers & Suppliers */}
           <Route path="/customers" element={<CustomersPage />} />
           <Route path="/suppliers" element={<SuppliersPage />} />
 
@@ -145,7 +182,7 @@ export const App: React.FC = () => {
           <Route
             path="/reports"
             element={
-              <ProtectedRoute allowedRoles={['admin', 'manager', 'viewer']}>
+              <ProtectedRoute requiredModule="module_reports" allowedRoles={['admin', 'manager', 'viewer']}>
                 <ReportsPage />
               </ProtectedRoute>
             }
@@ -162,7 +199,7 @@ export const App: React.FC = () => {
             }
           />
 
-          {/* Users & Roles (Phase 7 - Admin only) */}
+          {/* Staff & Roles (Admin only) */}
           <Route
             path="/users-roles"
             element={
@@ -180,7 +217,7 @@ export const App: React.FC = () => {
             }
           />
 
-          {/* Backup (Phase 7 - Admin only) */}
+          {/* Backup (Admin only) */}
           <Route
             path="/backup"
             element={
@@ -190,11 +227,11 @@ export const App: React.FC = () => {
             }
           />
 
-          {/* Settings (Phase 7 - Admin & Manager) */}
+          {/* Settings (Admin-only unless explicitly delegated with module_settings) */}
           <Route
             path="/settings"
             element={
-              <ProtectedRoute allowedRoles={['admin', 'manager']}>
+              <ProtectedRoute requiredModule="module_settings" allowedRoles={['admin', 'manager', 'staff']}>
                 <SettingsPage />
               </ProtectedRoute>
             }
