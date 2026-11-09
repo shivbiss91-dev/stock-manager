@@ -4,7 +4,6 @@ import {
   LayoutDashboard,
   Package,
   UserCog,
-  Settings,
   ChevronLeft,
   ChevronRight,
   ChevronDown,
@@ -74,8 +73,6 @@ export const Sidebar: React.FC = () => {
     }
     return true;
   });
-
-  const canAccessSettings = hasModulePermission('module_settings');
 
   const renderContent = (isMobile = false) => {
     const isCollapsed = !isMobile && sidebarCollapsed;
@@ -165,8 +162,8 @@ export const Sidebar: React.FC = () => {
                             onClick={() => isMobile && setMobileSidebarOpen(false)}
                             className={`block px-2.5 py-1.5 text-xs rounded-lg transition-colors ${
                               isCurrent
-                                ? 'font-bold text-brand-orange bg-brand-orange/10'
-                                : 'text-slate-500 dark:text-[#9AA0AE] hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-white/[0.04]'
+                                ? 'text-brand-orange font-bold bg-brand-orange/10'
+                                : 'text-slate-500 dark:text-[#9AA0AE] hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/[0.05]'
                             }`}
                           >
                             {sub.label}
@@ -184,8 +181,8 @@ export const Sidebar: React.FC = () => {
                 key={item.id}
                 to={item.path}
                 onClick={() => isMobile && setMobileSidebarOpen(false)}
-                className={({ isActive: exactActive }) => {
-                  const active = exactActive || isActive;
+                className={({ isActive: isLinkActive }) => {
+                  const active = isLinkActive || isSubActive;
                   return `flex items-center ${
                     isCollapsed ? 'justify-center w-11 h-11 mx-auto' : 'justify-between px-3 py-2.5'
                   } rounded-xl text-xs font-semibold transition-all group ${
@@ -215,29 +212,8 @@ export const Sidebar: React.FC = () => {
           })}
         </div>
 
-        {/* Rail Bottom: Settings Cog + User Avatar Tile */}
+        {/* Rail Bottom: User Avatar Tile */}
         <div className={`p-3 border-t border-slate-200/80 dark:border-white/[0.06] flex-shrink-0 space-y-2 ${isCollapsed ? 'flex flex-col items-center' : ''}`}>
-          {/* Settings Nav Item - Only shown if authorized */}
-          {canAccessSettings && (
-            <NavLink
-              to="/settings"
-              onClick={() => isMobile && setMobileSidebarOpen(false)}
-              className={({ isActive }) =>
-                `flex items-center ${
-                  isCollapsed ? 'justify-center w-11 h-11' : 'gap-3 px-3 py-2'
-                } rounded-xl text-xs font-semibold transition-all ${
-                  isActive
-                    ? 'bg-brand-orange/15 text-brand-orange border border-brand-orange/40'
-                    : 'text-slate-500 dark:text-[#9AA0AE] hover:bg-slate-100 dark:hover:bg-white/[0.05] hover:text-slate-900 dark:hover:text-white'
-                }`
-              }
-              title={isCollapsed ? 'Settings' : undefined}
-            >
-              <Settings className="w-5 h-5" strokeWidth={1.5} />
-              {!isCollapsed && <span>Settings</span>}
-            </NavLink>
-          )}
-
           {/* User Avatar tile & Profile Menu */}
           <UserMenu collapsed={isCollapsed} />
         </div>
