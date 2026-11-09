@@ -26,6 +26,7 @@ import {
   KeyRound,
   CheckCircle2,
   Smartphone,
+  UserPlus,
 } from 'lucide-react';
 
 const loginSchema = z.object({
@@ -67,16 +68,17 @@ export const LoginPage: React.FC = () => {
     otpPendingEmail,
   } = useAuthStore();
 
-  const [selectedRoleTab, setSelectedRoleTab] = useState<'admin' | 'manager' | 'staff'>('admin');
+  const [selectedRoleTab, setSelectedRoleTab] = useState<'admin' | 'staff'>('admin');
+  const [isCreatingAccount, setIsCreatingAccount] = useState<boolean>(false);
   const [staffLoginMethod, setStaffLoginMethod] = useState<LoginMethod>('google');
 
   // Staff Google OAuth form state
-  const [googleEmail, setGoogleEmail] = useState('');
-  const [googleName, setGoogleName] = useState('');
+  const [googleEmail, setGoogleEmail] = useState('rahul.deshmukh@gmail.com');
+  const [googleName, setGoogleName] = useState('Rahul Deshmukh');
 
   // Staff Phone OTP form state
-  const [phoneInput, setPhoneInput] = useState('');
-  const [phoneNameInput, setPhoneNameInput] = useState('');
+  const [phoneInput, setPhoneInput] = useState('9820099887');
+  const [phoneNameInput, setPhoneNameInput] = useState('Rahul Deshmukh');
   const [otpInput, setOtpInput] = useState('');
   const [isOtpDispatched, setIsOtpDispatched] = useState(false);
   const [dispatchedOtpHint, setDispatchedOtpHint] = useState<string | null>(null);
@@ -100,25 +102,6 @@ export const LoginPage: React.FC = () => {
       isMounted = false;
     };
   }, []);
-
-  // Update default staff inputs when switching roles
-  useEffect(() => {
-    if (selectedRoleTab === 'manager') {
-      setGoogleEmail('priya.manager@gmail.com');
-      setGoogleName('Priya Sharma');
-      setPhoneInput('9820011223');
-      setPhoneNameInput('Priya Sharma');
-    } else if (selectedRoleTab === 'staff') {
-      setGoogleEmail('rahul.deshmukh@gmail.com');
-      setGoogleName('Rahul Deshmukh');
-      setPhoneInput('9820099887');
-      setPhoneNameInput('Rahul Deshmukh');
-    }
-    setIsOtpDispatched(false);
-    setDispatchedOtpHint(null);
-    setOtpInput('');
-    clearError();
-  }, [selectedRoleTab, clearError]);
 
   const from = (location.state as { from?: { pathname: string } })?.from?.pathname || '/dashboard';
 
@@ -235,6 +218,8 @@ export const LoginPage: React.FC = () => {
     navigate(from, { replace: true });
   };
 
+  const isShowingSetup = isFreshInstall === true || isCreatingAccount;
+
   return (
     <div className="min-h-screen flex bg-[#F4F7FA] dark:bg-[#05060A] text-slate-800 dark:text-[#F2F4F8] transition-colors relative overflow-hidden">
       {/* Ambient background glow */}
@@ -297,7 +282,7 @@ export const LoginPage: React.FC = () => {
             <Logo size="md" showWordmark={true} />
           </div>
 
-          {/* ROLE SELECTOR PILLS (Admin / Manager / Staff) */}
+          {/* ROLE SELECTOR PILLS (Admin / Staff - Manager removed per request) */}
           <div className="flex items-center justify-between p-1.5 bg-slate-200/70 dark:bg-white/[0.05] rounded-full border border-slate-300/60 dark:border-white/10 shadow-sm">
             <button
               type="button"
@@ -305,7 +290,7 @@ export const LoginPage: React.FC = () => {
                 setSelectedRoleTab('admin');
                 clearError();
               }}
-              className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-full text-xs font-bold transition-all ${
+              className={`flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-full text-xs font-bold transition-all ${
                 selectedRoleTab === 'admin'
                   ? 'bg-white dark:bg-[#1E2230] text-slate-900 dark:text-white shadow-md ring-1 ring-black/5 dark:ring-white/10'
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
@@ -314,28 +299,14 @@ export const LoginPage: React.FC = () => {
               <span className="text-sm">👑</span>
               <span>Admin</span>
             </button>
-            <button
-              type="button"
-              onClick={() => {
-                setSelectedRoleTab('manager');
-                clearError();
-              }}
-              className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-full text-xs font-bold transition-all ${
-                selectedRoleTab === 'manager'
-                  ? 'bg-white dark:bg-[#1E2230] text-slate-900 dark:text-white shadow-md ring-1 ring-black/5 dark:ring-white/10'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-              }`}
-            >
-              <span className="text-sm">📋</span>
-              <span>Manager</span>
-            </button>
+
             <button
               type="button"
               onClick={() => {
                 setSelectedRoleTab('staff');
                 clearError();
               }}
-              className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-full text-xs font-bold transition-all ${
+              className={`flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-full text-xs font-bold transition-all ${
                 selectedRoleTab === 'staff'
                   ? 'bg-white dark:bg-[#1E2230] text-slate-900 dark:text-white shadow-md ring-1 ring-black/5 dark:ring-white/10'
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
@@ -404,20 +375,20 @@ export const LoginPage: React.FC = () => {
                 </span>
               </div>
 
-              {/* EXPERIENCE A: ACTUAL ADMIN LOGIN */}
-              {isFreshInstall === true ? (
-                /* First-Time Administrator Setup Flow */
+              {/* EXPERIENCE A: CREATE NEW ACCOUNT vs SIGN IN */}
+              {isShowingSetup ? (
+                /* Create a New Account Flow */
                 <div className="space-y-5">
                   <div>
                     <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-brand-orange/15 text-brand-orange text-xs font-bold border border-brand-orange/30 mb-2">
-                      <UserCheck className="w-3.5 h-3.5" />
-                      <span>Fresh Application Setup</span>
+                      <UserPlus className="w-3.5 h-3.5" />
+                      <span>New Account Registration</span>
                     </div>
                     <h2 className="text-xl font-bold text-slate-900 dark:text-[#F2F4F8] tracking-tight">
-                      Configure Actual Administrator
+                      Create a New Account
                     </h2>
                     <p className="text-xs text-slate-500 dark:text-[#9AA0AE] mt-1">
-                      Configure your primary corporate administrator account for real production operations.
+                      Configure your primary corporate administrator credentials for real production operations.
                     </p>
                   </div>
 
@@ -482,8 +453,25 @@ export const LoginPage: React.FC = () => {
                       rightIcon={<ArrowRight className="w-4 h-4" />}
                       className="w-full"
                     >
-                      Create Actual Admin & Log In
+                      Create Account & Sign In
                     </Button>
+
+                    {/* Link to return to Sign In */}
+                    {isFreshInstall !== true && (
+                      <div className="pt-2 text-center text-xs text-slate-500 dark:text-slate-400">
+                        <span>Already have an account? </span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            clearError();
+                            setIsCreatingAccount(false);
+                          }}
+                          className="font-bold text-accent-orange hover:underline focus:outline-none"
+                        >
+                          Sign In
+                        </button>
+                      </div>
+                    )}
                   </form>
                 </div>
               ) : (
@@ -553,6 +541,21 @@ export const LoginPage: React.FC = () => {
                     >
                       Sign In (Production Access)
                     </Button>
+
+                    {/* REPLACED STATEMENT: "Create a new account" option */}
+                    <div className="pt-3 border-t border-slate-200 dark:border-white/[0.08] text-center text-xs text-slate-500 dark:text-slate-400">
+                      <span>Don't have an account? </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          clearError();
+                          setIsCreatingAccount(true);
+                        }}
+                        className="font-bold text-accent-orange hover:underline focus:outline-none"
+                      >
+                        Create a new account
+                      </button>
+                    </div>
                   </form>
                 </div>
               )}
@@ -560,21 +563,17 @@ export const LoginPage: React.FC = () => {
           )}
 
           {/* ============================================================ */}
-          {/* TAB 2 & 3: MANAGER & STAFF AUTHENTICATION SYSTEM             */}
+          {/* TAB 2: STAFF AUTHENTICATION SYSTEM                           */}
           {/* ============================================================ */}
-          {selectedRoleTab !== 'admin' && (
+          {selectedRoleTab === 'staff' && (
             <div className="space-y-5">
               <div>
                 <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/10 text-accent-blue text-xs font-bold border border-blue-500/20 mb-2">
                   <UserCheck className="w-3.5 h-3.5" />
-                  <span>
-                    {selectedRoleTab === 'manager'
-                      ? 'Operations Manager Portal'
-                      : 'Billing & Floor Staff Portal'}
-                  </span>
+                  <span>Billing & Floor Staff Portal</span>
                 </div>
                 <h2 className="text-xl font-bold text-slate-900 dark:text-[#F2F4F8] tracking-tight">
-                  {selectedRoleTab === 'manager' ? 'Manager Sign-In' : 'Staff Sign-In'}
+                  Staff Sign-In
                 </h2>
                 <p className="text-xs text-slate-500 dark:text-[#9AA0AE] mt-1">
                   Choose your preferred registration/login method to access your assigned modules:
@@ -900,3 +899,5 @@ export const LoginPage: React.FC = () => {
     </div>
   );
 };
+
+export default LoginPage;
