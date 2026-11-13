@@ -12,6 +12,7 @@ import {
   DEFAULT_PACKAGING_CONVERSIONS,
 } from '../utils/unitConversions';
 import { StorageService, STORAGE_KEYS } from './storageService';
+import { MASTER_INVENTORY } from '../data/inventorySeed';
 
 export interface StockAdjustmentInput {
   mode?: 'add' | 'deduct' | 'direct';
@@ -27,7 +28,12 @@ export interface StockAdjustmentInput {
 }
 
 function getStoredItems(): InventoryItem[] {
-  return StorageService.get<InventoryItem[]>(STORAGE_KEYS.ITEMS, []);
+  const items = StorageService.get<InventoryItem[]>(STORAGE_KEYS.ITEMS, []);
+  if (!items || items.length === 0) {
+    saveStoredItems(MASTER_INVENTORY);
+    return MASTER_INVENTORY;
+  }
+  return items;
 }
 
 function saveStoredItems(items: InventoryItem[]): void {
@@ -405,6 +411,14 @@ export const inventoryService = {
     await new Promise((res) => setTimeout(res, 20));
     const itemsDatabase = getStoredItems();
     return itemsDatabase.map(toComputedItem);
+  },
+
+  async deleteItem(id: string): Promise<boolean> {
+    await new Promise((res) => setTimeout(res, 20));
+    const items = getStoredItems();
+    const next = items.filter((item) => item.id !== id);
+    saveStoredItems(next);
+    return true;
   },
 
   _seedInventoryForTesting(items: InventoryItem[]): void {

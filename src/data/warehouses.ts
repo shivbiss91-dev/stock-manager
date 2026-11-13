@@ -1,7 +1,58 @@
 import { Warehouse } from '../types/warehouse';
 
-/**
- * Warehouses Seed: Empty initial collection for production.
- * Real warehouse facilities are added and managed by the administrator.
- */
-export const MOCK_WAREHOUSES: Warehouse[] = [];
+export const MOCK_WAREHOUSES: Warehouse[] = [
+  {
+    id: 'wh-001',
+    code: 'BHW-01',
+    name: 'Bhiwandi Central',
+    state: 'Maharashtra',
+    stateCode: '27',
+    city: 'Bhiwandi',
+    address: 'Survey No. 42/1, Mankoli Naka, Mumbai-Nashik Highway',
+    pincode: '421302',
+    contactPerson: 'Rajesh Patil',
+    phone: '+91 98201 12345',
+    totalCapacitySqFt: 45000,
+    utilizedCapacityPercent: 68,
+    totalItemsCount: 450,
+    totalPieces: 12450,
+    stockValueINR: 1450000,
+    isPrimary: true,
+  },
+  {
+    id: 'wh-002',
+    code: 'PNV-02',
+    name: 'Panvel Logistics',
+    state: 'Maharashtra',
+    stateCode: '27',
+    city: 'Panvel',
+    address: 'Plot 15, Kalamboli Warehousing Complex',
+    pincode: '410218',
+    contactPerson: 'Suresh Deshmukh',
+    phone: '+91 98202 23456',
+    totalCapacitySqFt: 35000,
+    utilizedCapacityPercent: 54,
+    totalItemsCount: 220,
+    totalPieces: 8200,
+    stockValueINR: 890000,
+    isPrimary: false,
+  },
+  {
+    id: 'wh-003',
+    code: 'NGP-03',
+    name: 'Nagpur Central',
+    state: 'Maharashtra',
+    stateCode: '27',
+    city: 'Nagpur',
+    address: 'MIDC Butibori Industrial Area, Sector 5',
+    pincode: '441122',
+    contactPerson: 'Amitabh Sharma',
+    phone: '+91 98203 34567',
+    totalCapacitySqFt: 28000,
+    utilizedCapacityPercent: 42,
+    totalItemsCount: 180,
+    totalPieces: 6500,
+    stockValueINR: 620000,
+    isPrimary: false,
+  },
+];

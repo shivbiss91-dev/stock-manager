@@ -1,7 +1,36 @@
 import { Supplier } from '../types/sales';
 
-/**
- * Suppliers Seed: Empty initial collection for production.
- * Live mill and manufacturer vendor accounts are registered through the Supplier module.
- */
-export const MOCK_SUPPLIERS: Supplier[] = [];
+export const MOCK_SUPPLIERS: Supplier[] = [
+  {
+    id: 'sup-001',
+    name: 'Apex Badge & ID Solutions',
+    companyName: 'Apex Badge & ID Solutions Pvt Ltd',
+    gstin: '27AABCA1234F1Z5',
+    stateCode: '27',
+    state: 'Maharashtra',
+    city: 'Mumbai',
+    address: 'Unit 402, Trade Center, Kurla West',
+    contactPerson: 'Karan Mehra',
+    phone: '+91 98200 44556',
+    email: 'sales@apexbadge.in',
+    category: 'card_holder',
+    leadTimeDays: 3,
+    rating: 4.8,
+  },
+  {
+    id: 'sup-002',
+    name: 'SecureID India Systems',
+    companyName: 'SecureID India Systems LLP',
+    gstin: '27AABCS5678G1Z2',
+    stateCode: '27',
+    state: 'Maharashtra',
+    city: 'Pune',
+    address: 'Plot 88, Electronic Zone, Hinjewadi Phase 1',
+    contactPerson: 'Pooja Nair',
+    phone: '+91 98200 77889',
+    email: 'orders@secureidindia.com',
+    category: 'rfid_cards',
+    leadTimeDays: 4,
+    rating: 4.9,
+  },
+];

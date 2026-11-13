@@ -4,6 +4,12 @@ import { PredefinedUnit, PackagingConversions } from '../utils/unitConversions';
 export type { PredefinedUnit, PackagingConversions };
 
 export type MaterialCategory =
+  | 'card_holder'
+  | 'lanyards'
+  | 'badge_reels'
+  | 'id_cards'
+  | 'rfid_cards'
+  | 'clips_accessories'
   | 'wood'
   | 'metal'
   | 'plastic'
@@ -11,11 +17,14 @@ export type MaterialCategory =
   | 'fabric'
   | 'rubber'
   | 'paper'
-  | 'ceramic';
+  | 'ceramic'
+  | (string & {});
 
 export type UnitOfMeasurement =
   | PredefinedUnit
   | 'pieces'
+  | 'PCS'
+  | 'packs'
   | 'sheets'
   | 'boxes'
   | 'rolls'

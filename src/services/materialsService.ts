@@ -23,7 +23,19 @@ export const materialsService = {
       pageSize: 5000,
     });
 
-    return categoriesState.map((cat) => {
+    const isCardHolderCatalog = items.some((i) =>
+      ['card_holder', 'lanyards', 'badge_reels', 'id_cards', 'rfid_cards', 'clips_accessories'].includes(i.materialCategory)
+    );
+
+    const activeCategories = isCardHolderCatalog
+      ? categoriesState.filter((c) =>
+          ['card_holder', 'lanyards', 'badge_reels', 'id_cards', 'rfid_cards', 'clips_accessories'].includes(c.id)
+        )
+      : categoriesState.filter((c) =>
+          ['wood', 'metal', 'plastic', 'glass', 'fabric', 'rubber', 'paper', 'ceramic'].includes(c.id)
+        );
+
+    return activeCategories.map((cat) => {
       const catItems = items.filter((i) => i.materialCategory === cat.id);
       const itemCount = catItems.length;
       const totalPieces = catItems.reduce((acc, curr) => acc + curr.currentStock, 0);

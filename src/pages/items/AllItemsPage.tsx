@@ -12,6 +12,8 @@ import {
   Printer,
   ArrowRightLeft,
   Edit,
+  Trash2,
+  CreditCard,
 } from 'lucide-react';
 import { inventoryService } from '../../services/inventoryService';
 import { ComputedInventoryItem, MaterialCategory } from '../../types/inventory';
@@ -21,6 +23,8 @@ import { AddItemModal } from '../../components/dashboard/AddItemModal';
 import { BarcodeLabelModal } from '../../components/itemDetail/BarcodeLabelModal';
 import { TransferStockModal } from '../../components/itemDetail/TransferStockModal';
 import { QuickStockAdjustmentModal } from '../../components/dashboard/QuickStockAdjustmentModal';
+import { Modal } from '../../components/common/Modal';
+import { Button } from '../../components/common/Button';
 import { useAuthStore } from '../../store/authStore';
 
 export const AllItemsPage: React.FC = () => {
@@ -55,6 +59,32 @@ export const AllItemsPage: React.FC = () => {
   const [selectedItemForTransfer, setSelectedItemForTransfer] = useState<ComputedInventoryItem | null>(null);
   const [adjustmentItem, setAdjustmentItem] = useState<ComputedInventoryItem | null>(null);
   const [adjustmentMode, setAdjustmentMode] = useState<'add' | 'deduct' | 'direct'>('add');
+  const [deleteConfirmItem, setDeleteConfirmItem] = useState<ComputedInventoryItem | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleDeleteItem = async () => {
+    if (!deleteConfirmItem) return;
+    setIsDeleting(true);
+    try {
+      await inventoryService.deleteItem(deleteConfirmItem.id);
+      const res = await inventoryService.getItems({
+        page,
+        pageSize: 20,
+        search: searchParam || undefined,
+        category: categoryParam !== 'all' ? categoryParam : undefined,
+        stockStatus: statusParam !== 'all' ? statusParam : undefined,
+      });
+      setItems(res.items);
+      setTotalCount(res.totalCount);
+      setTotalPages(res.totalPages);
+      setStatusCounts(res.statusCounts);
+      setDeleteConfirmItem(null);
+    } catch (err) {
+      console.error('Failed to delete item:', err);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   // Load items
   useEffect(() => {
@@ -280,21 +310,34 @@ export const AllItemsPage: React.FC = () => {
                     {/* Product Name & Thumbnail */}
                     <td className="py-3 px-4">
                       <div className="flex items-center gap-3">
-                        <img
-                          src={item.images[0]}
-                          alt={item.name}
-                          className="w-10 h-10 rounded-lg object-cover bg-slate-100 dark:bg-slate-900 flex-shrink-0 border border-slate-200 dark:border-white/[0.06]"
-                        />
+                        <div className="w-10 h-10 rounded-xl bg-[#121824] border border-white/10 flex items-center justify-center flex-shrink-0 shadow-sm overflow-hidden p-1">
+                          {item.images[0] ? (
+                            <img
+                              src={item.images[0]}
+                              alt={item.name}
+                              className="w-full h-full object-cover rounded-lg"
+                            />
+                          ) : (
+                            <div className="w-6 h-7 rounded border border-blue-400/40 bg-blue-500/20 flex flex-col items-center pt-0.5">
+                              <div className="w-2.5 h-1 bg-blue-400 rounded-sm mb-1" />
+                              <div className="w-3 h-3 rounded-full bg-blue-300/40" />
+                            </div>
+                          )}
+                        </div>
                         <div className="min-w-0">
                           <Link
                             to={`/items/${item.id}`}
-                            className="font-semibold text-slate-900 dark:text-[#F2F4F8] hover:text-brand-orange transition line-clamp-1"
+                            className="font-bold text-slate-900 dark:text-[#F2F4F8] hover:text-brand-orange transition line-clamp-1 text-xs"
                           >
                             {item.name}
                           </Link>
                           <div className="flex items-center gap-1.5 text-[11px] text-slate-400 capitalize">
-                            <span>{item.materialCategory}</span>
-                            <span>•</span>
+                            <span className="text-[#38BDF8]">
+                              {item.materialCategory === 'card_holder'
+                                ? 'Card Holder'
+                                : item.materialCategory.replace('_', ' ')}
+                            </span>
+                            <span className="text-blue-400">•</span>
                             <span>{item.materialSubtype}</span>
                           </div>
                         </div>
@@ -303,10 +346,10 @@ export const AllItemsPage: React.FC = () => {
 
                     {/* SKU & HSN */}
                     <td className="py-3 px-3">
-                      <span className="font-mono font-medium text-brand-orange block">
+                      <span className="font-mono font-bold text-brand-orange block">
                         {item.sku}
                       </span>
-                      <span className="text-[10px] text-slate-400 font-mono">
+                      <span className="text-[10px] text-cyan-400/80 font-mono">
                         HSN {item.hsnCode}
                       </span>
                     </td>
@@ -323,7 +366,7 @@ export const AllItemsPage: React.FC = () => {
 
                     {/* Price */}
                     <td className="py-3 px-3 text-right">
-                      <span className="font-semibold text-slate-900 dark:text-white block">
+                      <span className="font-bold text-slate-900 dark:text-white block">
                         {formatINR(item.sellingPrice)}
                       </span>
                       <span className="text-[10px] text-slate-400">
@@ -340,10 +383,10 @@ export const AllItemsPage: React.FC = () => {
                             setAdjustmentItem(item);
                             setAdjustmentMode('deduct');
                           }}
-                          className="w-5 h-5 rounded flex items-center justify-center bg-rose-500/10 hover:bg-rose-500 text-rose-500 hover:text-white transition-colors border border-rose-500/20"
+                          className="w-5 h-5 rounded flex items-center justify-center bg-rose-500/15 hover:bg-rose-500 text-rose-400 hover:text-white transition-colors border border-rose-500/30"
                           title="Deduct Stock (-)"
                         >
-                          <Minus className="w-3 h-3" />
+                          <Minus className="w-3 h-3 stroke-[2.5]" />
                         </button>
                         <button
                           type="button"
@@ -351,15 +394,13 @@ export const AllItemsPage: React.FC = () => {
                             setAdjustmentItem(item);
                             setAdjustmentMode('direct');
                           }}
-                          className={`font-bold hover:text-accent-orange transition-colors ${
-                            item.currentStock <= item.reorderLevel
-                              ? 'text-amber-500'
-                              : 'text-emerald-500'
-                          }`}
+                          className="font-bold text-emerald-400 hover:text-emerald-300 transition-colors px-1"
                           title="Click to directly edit stock balance"
                         >
                           {item.currentStock.toLocaleString('en-IN')}{' '}
-                          <span className="text-[10px] font-normal text-slate-400">{item.unit}</span>
+                          <span className="text-[10px] font-normal text-slate-400">
+                            {item.unit.toUpperCase() === 'PIECES' ? 'PCS' : item.unit}
+                          </span>
                         </button>
                         <button
                           type="button"
@@ -367,23 +408,23 @@ export const AllItemsPage: React.FC = () => {
                             setAdjustmentItem(item);
                             setAdjustmentMode('add');
                           }}
-                          className="w-5 h-5 rounded flex items-center justify-center bg-emerald-500/10 hover:bg-emerald-500 text-emerald-500 hover:text-white transition-colors border border-emerald-500/20"
+                          className="w-5 h-5 rounded flex items-center justify-center bg-emerald-500/15 hover:bg-emerald-500 text-emerald-400 hover:text-white transition-colors border border-emerald-500/30"
                           title="Add Stock (+)"
                         >
-                          <Plus className="w-3 h-3" />
+                          <Plus className="w-3 h-3 stroke-[2.5]" />
                         </button>
                       </div>
                       <span className="text-[10px] text-slate-400 block">
-                        Min: {item.reorderLevel} {item.unit}
+                        Min: {item.reorderLevel} {item.unit.toUpperCase() === 'PIECES' ? 'PCS' : item.unit}
                       </span>
                     </td>
 
                     {/* Status Badge */}
                     <td className="py-3 px-3 text-center">
                       <span
-                        className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
+                        className={`inline-block px-3 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase ${
                           item.stockStatus === 'in_stock'
-                            ? 'bg-emerald-500/15 text-emerald-500 border border-emerald-500/30'
+                            ? 'bg-[#0A261D] text-[#10B981] border border-[#10B981]/40'
                             : item.stockStatus === 'low_stock'
                             ? 'bg-amber-500/15 text-amber-500 border border-amber-500/30'
                             : item.stockStatus === 'dead_stock'
@@ -397,10 +438,10 @@ export const AllItemsPage: React.FC = () => {
 
                     {/* Action buttons */}
                     <td className="py-3 px-4 text-right">
-                      <div className="flex items-center justify-end gap-1.5">
+                      <div className="flex items-center justify-end gap-1.5 text-slate-400">
                         <Link
                           to={`/items/${item.id}`}
-                          className="p-1.5 text-slate-400 hover:text-white hover:bg-white/10 rounded-lg transition"
+                          className="p-1.5 hover:text-white hover:bg-white/10 rounded-lg transition"
                           title="View Details"
                         >
                           <Eye className="w-4 h-4" />
@@ -410,24 +451,24 @@ export const AllItemsPage: React.FC = () => {
                             setAdjustmentItem(item);
                             setAdjustmentMode('direct');
                           }}
-                          className="p-1.5 text-slate-400 hover:text-accent-orange hover:bg-white/10 rounded-lg transition"
+                          className="p-1.5 hover:text-accent-orange hover:bg-white/10 rounded-lg transition"
                           title="Stock Adjustment & Calibration"
                         >
                           <Edit className="w-4 h-4" />
                         </button>
                         <button
-                          onClick={() => setSelectedItemForTransfer(item)}
-                          className="p-1.5 text-slate-400 hover:text-white hover:bg-white/10 rounded-lg transition"
-                          title="Transfer Stock"
-                        >
-                          <ArrowRightLeft className="w-4 h-4" />
-                        </button>
-                        <button
                           onClick={() => setSelectedItemForLabel(item)}
-                          className="p-1.5 text-slate-400 hover:text-white hover:bg-white/10 rounded-lg transition"
+                          className="p-1.5 hover:text-white hover:bg-white/10 rounded-lg transition"
                           title="Print Barcode Label"
                         >
                           <Printer className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => setDeleteConfirmItem(item)}
+                          className="p-1.5 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition"
+                          title="Delete Item"
+                        >
+                          <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
                     </td>
@@ -541,6 +582,58 @@ export const AllItemsPage: React.FC = () => {
             inventoryService.getItems({ page, pageSize: 20 }).then((res) => setItems(res.items));
           }}
         />
+      )}
+
+      {/* Delete Item Confirmation Modal */}
+      {deleteConfirmItem && (
+        <Modal
+          isOpen={!!deleteConfirmItem}
+          onClose={() => setDeleteConfirmItem(null)}
+          title="Delete Product"
+          subtitle="This action will remove the product from active inventory."
+        >
+          <div className="space-y-4">
+            <p className="text-sm text-slate-700 dark:text-slate-300">
+              Are you sure you want to delete{' '}
+              <strong className="text-slate-900 dark:text-white">
+                {deleteConfirmItem.name}
+              </strong>{' '}
+              (<span className="font-mono text-brand-orange">{deleteConfirmItem.sku}</span>)?
+            </p>
+
+            <div className="p-3 rounded-xl bg-slate-100 dark:bg-white/[0.04] border border-slate-200 dark:border-white/[0.08] text-xs space-y-1">
+              <div className="flex justify-between">
+                <span className="text-slate-400">Current Stock:</span>
+                <span className="font-bold text-slate-800 dark:text-slate-200">
+                  {deleteConfirmItem.currentStock} {deleteConfirmItem.unit}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-400">Selling Price:</span>
+                <span className="font-bold text-slate-800 dark:text-slate-200">
+                  {formatINR(deleteConfirmItem.sellingPrice)}
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-3">
+              <Button
+                variant="secondary"
+                onClick={() => setDeleteConfirmItem(null)}
+                disabled={isDeleting}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="danger"
+                onClick={handleDeleteItem}
+                isLoading={isDeleting}
+              >
+                Delete Product
+              </Button>
+            </div>
+          </div>
+        </Modal>
       )}
     </div>
   );

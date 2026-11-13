@@ -1,10 +1,16 @@
 import { Warehouse } from '../types/warehouse';
 import { StorageService, STORAGE_KEYS } from './storageService';
+import { MOCK_WAREHOUSES } from '../data/warehouses';
 
 export const warehouseService = {
   async getWarehouses(): Promise<Warehouse[]> {
     await new Promise((res) => setTimeout(res, 40));
-    return StorageService.get<Warehouse[]>(STORAGE_KEYS.WAREHOUSES, []);
+    const list = StorageService.get<Warehouse[]>(STORAGE_KEYS.WAREHOUSES, []);
+    if (!list || list.length === 0) {
+      StorageService.set(STORAGE_KEYS.WAREHOUSES, MOCK_WAREHOUSES);
+      return MOCK_WAREHOUSES;
+    }
+    return list;
   },
 
   async getWarehouseById(id: string): Promise<Warehouse | null> {
