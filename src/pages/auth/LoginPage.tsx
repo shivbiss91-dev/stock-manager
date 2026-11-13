@@ -331,6 +331,19 @@ export const LoginPage: React.FC = () => {
                 >
                   Sign In to StockVista
                 </Button>
+
+                <div className="pt-2 text-center">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      loginForm.setValue('email', 'admin@stockvista.in');
+                      loginForm.setValue('password', 'admin123');
+                    }}
+                    className="text-xs text-brand-orange hover:underline font-semibold"
+                  >
+                    Quick Fill Demo Admin (admin@stockvista.in / admin123)
+                  </button>
+                </div>
               </form>
             </div>
           )}

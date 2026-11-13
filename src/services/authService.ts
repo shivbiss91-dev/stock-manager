@@ -23,8 +23,12 @@ function sanitizeUser(account: UserAccount): User {
 
 export const authService = {
   async hasUsers(): Promise<boolean> {
-    const users = StorageService.get<UserAccount[]>(STORAGE_KEYS.USERS, []);
-    return users.length > 0;
+    let users = StorageService.get<UserAccount[]>(STORAGE_KEYS.USERS, []);
+    if (!users || users.length === 0) {
+      StorageService.set(STORAGE_KEYS.USERS, MOCK_USERS);
+      return true;
+    }
+    return true;
   },
 
   async createInitialAdmin(input: InitialAdminInput): Promise<AuthSession> {
@@ -76,7 +80,11 @@ export const authService = {
   async login(email: string, passwordHash: string): Promise<LoginResult> {
     await new Promise((res) => setTimeout(res, 180));
 
-    const users = StorageService.get<UserAccount[]>(STORAGE_KEYS.USERS, []);
+    let users = StorageService.get<UserAccount[]>(STORAGE_KEYS.USERS, []);
+    if (!users || users.length === 0) {
+      StorageService.set(STORAGE_KEYS.USERS, MOCK_USERS);
+      users = MOCK_USERS;
+    }
     const userAccount = users.find(
       (u) => u.email.toLowerCase() === email.trim().toLowerCase()
     );

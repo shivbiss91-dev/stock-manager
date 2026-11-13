@@ -6,8 +6,18 @@ export interface UserAccount extends User {
   otpCode?: string;
 }
 
-/**
- * Users Seed: Empty initial collection for production.
- * Initial administrator profile is created explicitly during the first-time setup process.
- */
-export const MOCK_USERS: UserAccount[] = [];
+export const MOCK_USERS: UserAccount[] = [
+  {
+    id: 'usr-admin-01',
+    name: 'Administrator',
+    email: 'admin@stockvista.in',
+    role: 'admin',
+    roleTitle: 'System Administrator',
+    phone: '+91 98200 12345',
+    passwordHash: 'admin123',
+    requiresOtp: false,
+    warehouseId: 'all',
+    warehouseName: 'All Warehouses',
+    status: 'active',
+  },
+];
