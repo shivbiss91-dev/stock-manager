@@ -353,21 +353,28 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({
               <div className="flex items-center gap-2">
                 <Layers className="w-4 h-4 text-brand-orange" />
                 <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200">
-                  Packaging Category & Conversion
+                  Packaging Conversions (Base Unit: {unit === 'UNT' ? 'UNT' : 'PCS'})
                 </h4>
               </div>
-              <span className="text-[10.5px] text-slate-400">
-                Base Unit: <strong className="text-slate-700 dark:text-slate-200">{unit === 'UNT' ? 'UNT' : 'PCS'}</strong>
-              </span>
+              {selectedPackagingCategory !== 'none' && (
+                <button
+                  type="button"
+                  onClick={() => setSelectedPackagingCategory('none')}
+                  className="text-[11px] text-rose-500 hover:text-rose-600 hover:underline flex items-center gap-1 font-semibold"
+                  title="Cancel packaging and use direct pieces"
+                >
+                  <span>✕ Cancel / Direct {unit === 'UNT' ? 'UNT' : 'PCS'}</span>
+                </button>
+              )}
             </div>
 
             <div>
               <label className="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                Select Packaging Type for this Product
+                Choose Packaging Category (Select One)
               </label>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 {[
-                  { id: 'none', label: 'Direct Pieces', desc: 'Single piece unit' },
+                  { id: 'none', label: 'None (Direct)', desc: 'Individual items' },
                   { id: 'BOX', label: 'Box (BOX)', desc: 'Packed in boxes' },
                   { id: 'CTN', label: 'Carton (CTN)', desc: 'Packed in cartons' },
                   { id: 'BDL', label: 'Bundle (BDL)', desc: 'Packed in bundles' },
@@ -393,75 +400,64 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({
               </div>
             </div>
 
-            {selectedPackagingCategory === 'none' && (
-              <div className="p-3 rounded-xl bg-white dark:bg-white/[0.03] border border-dashed border-slate-200 dark:border-white/[0.08] text-xs text-slate-500 dark:text-slate-400">
-                This product is sold and managed directly as individual {unit === 'UNT' ? 'units (UNT)' : 'pieces (PCS)'}. No secondary packaging multiplier needed.
+            {selectedPackagingCategory === 'none' ? (
+              <div className="p-3 rounded-xl bg-white dark:bg-white/[0.03] border border-dashed border-slate-200 dark:border-white/[0.08] text-xs text-slate-500 dark:text-slate-400 flex items-center justify-between">
+                <span>This item has no packaging multiplier. Handled directly as individual {unit === 'UNT' ? 'units' : 'pieces'}.</span>
+                <span className="text-[10px] text-emerald-500 font-bold bg-emerald-500/10 px-2 py-0.5 rounded">Direct Unit</span>
               </div>
-            )}
+            ) : (
+              <div className="p-3 rounded-xl bg-white dark:bg-white/[0.03] border border-slate-200 dark:border-white/[0.08] space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="block text-[11px] font-semibold text-slate-700 dark:text-slate-300">
+                    {selectedPackagingCategory === 'BOX' && `Box Conversion: How many ${unit === 'UNT' ? 'UNT' : 'PCS'} in 1 Box?`}
+                    {selectedPackagingCategory === 'CTN' && `Carton Conversion: How many ${unit === 'UNT' ? 'UNT' : 'PCS'} in 1 Carton?`}
+                    {selectedPackagingCategory === 'BDL' && `Bundle Conversion: How many ${unit === 'UNT' ? 'UNT' : 'PCS'} in 1 Bundle?`}
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedPackagingCategory('none')}
+                    className="text-[10.5px] text-rose-400 hover:text-rose-500 transition-colors font-medium"
+                  >
+                    ✕ Cancel & Remove
+                  </button>
+                </div>
 
-            {selectedPackagingCategory === 'BOX' && (
-              <div className="p-3 rounded-xl bg-white dark:bg-white/[0.03] border border-slate-200 dark:border-white/[0.08] space-y-1.5">
-                <label className="block text-[11px] font-semibold text-slate-700 dark:text-slate-300">
-                  Box Multiplier: How many {unit === 'UNT' ? 'units' : 'pieces'} in 1 Box?
-                </label>
-                <div className="flex items-center gap-2 max-w-xs">
-                  <span className="text-xs font-bold text-slate-500">1 Box (BOX) =</span>
-                  <input
-                    type="number"
-                    min="1"
-                    value={boxMultiplier}
-                    onChange={(e) => setBoxMultiplier(e.target.value)}
-                    className="w-24 px-2.5 py-1.5 text-xs template-input border border-slate-200 dark:border-white/[0.08] rounded-lg text-slate-900 dark:text-white font-bold"
-                  />
+                <div className="flex items-center gap-2 max-w-sm">
+                  <span className="text-xs font-bold text-slate-600 dark:text-slate-400">
+                    1 {selectedPackagingCategory} =
+                  </span>
+                  {selectedPackagingCategory === 'BOX' && (
+                    <input
+                      type="number"
+                      min="1"
+                      value={boxMultiplier}
+                      onChange={(e) => setBoxMultiplier(e.target.value)}
+                      className="w-28 px-3 py-1.5 text-xs template-input border border-slate-200 dark:border-white/[0.08] rounded-lg text-slate-900 dark:text-white font-bold"
+                    />
+                  )}
+                  {selectedPackagingCategory === 'CTN' && (
+                    <input
+                      type="number"
+                      min="1"
+                      value={cartonMultiplier}
+                      onChange={(e) => setCartonMultiplier(e.target.value)}
+                      className="w-28 px-3 py-1.5 text-xs template-input border border-slate-200 dark:border-white/[0.08] rounded-lg text-slate-900 dark:text-white font-bold"
+                    />
+                  )}
+                  {selectedPackagingCategory === 'BDL' && (
+                    <input
+                      type="number"
+                      min="1"
+                      value={bundleMultiplier}
+                      onChange={(e) => setBundleMultiplier(e.target.value)}
+                      className="w-28 px-3 py-1.5 text-xs template-input border border-slate-200 dark:border-white/[0.08] rounded-lg text-slate-900 dark:text-white font-bold"
+                    />
+                  )}
                   <span className="text-xs text-slate-400">{unit === 'UNT' ? 'UNT' : 'PCS'}</span>
                 </div>
-                <span className="text-[10.5px] text-slate-400 block">
-                  Example: 20 card holders per box. Ordering 10 boxes = 200 {unit === 'UNT' ? 'UNT' : 'PCS'}.
-                </span>
-              </div>
-            )}
-
-            {selectedPackagingCategory === 'CTN' && (
-              <div className="p-3 rounded-xl bg-white dark:bg-white/[0.03] border border-slate-200 dark:border-white/[0.08] space-y-1.5">
-                <label className="block text-[11px] font-semibold text-slate-700 dark:text-slate-300">
-                  Carton Multiplier: How many {unit === 'UNT' ? 'units' : 'pieces'} in 1 Carton?
-                </label>
-                <div className="flex items-center gap-2 max-w-xs">
-                  <span className="text-xs font-bold text-slate-500">1 Carton (CTN) =</span>
-                  <input
-                    type="number"
-                    min="1"
-                    value={cartonMultiplier}
-                    onChange={(e) => setCartonMultiplier(e.target.value)}
-                    className="w-24 px-2.5 py-1.5 text-xs template-input border border-slate-200 dark:border-white/[0.08] rounded-lg text-slate-900 dark:text-white font-bold"
-                  />
-                  <span className="text-xs text-slate-400">{unit === 'UNT' ? 'UNT' : 'PCS'}</span>
-                </div>
-                <span className="text-[10.5px] text-slate-400 block">
-                  Example: 100 card holders per shipping carton. Ordering 5 cartons = 500 {unit === 'UNT' ? 'UNT' : 'PCS'}.
-                </span>
-              </div>
-            )}
-
-            {selectedPackagingCategory === 'BDL' && (
-              <div className="p-3 rounded-xl bg-white dark:bg-white/[0.03] border border-slate-200 dark:border-white/[0.08] space-y-1.5">
-                <label className="block text-[11px] font-semibold text-slate-700 dark:text-slate-300">
-                  Bundle Multiplier: How many {unit === 'UNT' ? 'units' : 'pieces'} in 1 Bundle?
-                </label>
-                <div className="flex items-center gap-2 max-w-xs">
-                  <span className="text-xs font-bold text-slate-500">1 Bundle (BDL) =</span>
-                  <input
-                    type="number"
-                    min="1"
-                    value={bundleMultiplier}
-                    onChange={(e) => setBundleMultiplier(e.target.value)}
-                    className="w-24 px-2.5 py-1.5 text-xs template-input border border-slate-200 dark:border-white/[0.08] rounded-lg text-slate-900 dark:text-white font-bold"
-                  />
-                  <span className="text-xs text-slate-400">{unit === 'UNT' ? 'UNT' : 'PCS'}</span>
-                </div>
-                <span className="text-[10.5px] text-slate-400 block">
-                  Example: 25 lanyards tied in a bundle. Ordering 4 bundles = 100 {unit === 'UNT' ? 'UNT' : 'PCS'}.
-                </span>
+                <p className="text-[10.5px] text-slate-400">
+                  Only this single selected packaging type is applied. All other packaging sections are cancelled and ignored.
+                </p>
               </div>
             )}
           </div>
