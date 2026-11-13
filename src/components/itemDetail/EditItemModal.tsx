@@ -52,6 +52,7 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({
   const [bundleMultiplier, setBundleMultiplier] = useState(
     (item.packagingConversions?.bundleMultiplier || 25).toString()
   );
+  const [selectedPackagingCategory, setSelectedPackagingCategory] = useState<'BOX' | 'CTN' | 'BDL' | 'none'>('BOX');
   const [description, setDescription] = useState(item.description);
 
   // Approval request specific fields
@@ -346,70 +347,123 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({
             )}
           </div>
 
-          {/* Product-Specific Packaging Conversions Configuration */}
+          {/* Product-Specific Packaging Conversions Configuration by Category */}
           <div className="p-4 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/[0.06] space-y-3">
-            <div className="flex items-center gap-2">
-              <Layers className="w-4 h-4 text-accent-orange" />
-              <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200">
-                Packaging Multipliers & Conversions (Base: {unit === 'UNT' ? 'UNT' : 'PCS'})
-              </h4>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Layers className="w-4 h-4 text-brand-orange" />
+                <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                  Packaging Category & Conversion
+                </h4>
+              </div>
+              <span className="text-[10.5px] text-slate-400">
+                Base Unit: <strong className="text-slate-700 dark:text-slate-200">{unit === 'UNT' ? 'UNT' : 'PCS'}</strong>
+              </span>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-              <div className="p-2.5 rounded-lg bg-white dark:bg-white/[0.03] border border-slate-200 dark:border-white/[0.06]">
-                <span className="text-slate-500 block mb-1">1 Dozen (DOZ)</span>
-                <span className="font-extrabold text-slate-800 dark:text-white">12 {unit === 'UNT' ? 'UNT' : 'PCS'}</span>
-                <span className="text-[10px] text-slate-400 block mt-0.5">Fixed standard</span>
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                Select Packaging Type for this Product
+              </label>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                {[
+                  { id: 'none', label: 'Direct Pieces', desc: 'Single piece unit' },
+                  { id: 'BOX', label: 'Box (BOX)', desc: 'Packed in boxes' },
+                  { id: 'CTN', label: 'Carton (CTN)', desc: 'Packed in cartons' },
+                  { id: 'BDL', label: 'Bundle (BDL)', desc: 'Packed in bundles' },
+                ].map((pkg) => (
+                  <button
+                    key={pkg.id}
+                    type="button"
+                    onClick={() => setSelectedPackagingCategory(pkg.id as any)}
+                    className={`p-2.5 rounded-xl border text-left transition-all ${
+                      selectedPackagingCategory === pkg.id
+                        ? 'bg-brand-orange/15 border-brand-orange text-brand-orange ring-1 ring-brand-orange'
+                        : 'bg-white dark:bg-white/[0.03] border-slate-200 dark:border-white/[0.08] text-slate-600 dark:text-slate-400 hover:border-slate-300 dark:hover:border-white/20'
+                    }`}
+                  >
+                    <span className="font-bold text-xs block text-slate-900 dark:text-white">
+                      {pkg.label}
+                    </span>
+                    <span className="text-[10px] text-slate-400 block mt-0.5">
+                      {pkg.desc}
+                    </span>
+                  </button>
+                ))}
               </div>
+            </div>
 
-              <div>
-                <label className="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  1 Box (BOX) =
+            {selectedPackagingCategory === 'none' && (
+              <div className="p-3 rounded-xl bg-white dark:bg-white/[0.03] border border-dashed border-slate-200 dark:border-white/[0.08] text-xs text-slate-500 dark:text-slate-400">
+                This product is sold and managed directly as individual {unit === 'UNT' ? 'units (UNT)' : 'pieces (PCS)'}. No secondary packaging multiplier needed.
+              </div>
+            )}
+
+            {selectedPackagingCategory === 'BOX' && (
+              <div className="p-3 rounded-xl bg-white dark:bg-white/[0.03] border border-slate-200 dark:border-white/[0.08] space-y-1.5">
+                <label className="block text-[11px] font-semibold text-slate-700 dark:text-slate-300">
+                  Box Multiplier: How many {unit === 'UNT' ? 'units' : 'pieces'} in 1 Box?
                 </label>
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-2 max-w-xs">
+                  <span className="text-xs font-bold text-slate-500">1 Box (BOX) =</span>
                   <input
                     type="number"
                     min="1"
                     value={boxMultiplier}
                     onChange={(e) => setBoxMultiplier(e.target.value)}
-                    className="w-full px-2.5 py-1.5 text-xs template-input border border-slate-200 dark:border-white/[0.08] rounded-lg text-slate-900 dark:text-white"
+                    className="w-24 px-2.5 py-1.5 text-xs template-input border border-slate-200 dark:border-white/[0.08] rounded-lg text-slate-900 dark:text-white font-bold"
                   />
-                  <span className="text-[11px] text-slate-400">{unit === 'UNT' ? 'UNT' : 'PCS'}</span>
+                  <span className="text-xs text-slate-400">{unit === 'UNT' ? 'UNT' : 'PCS'}</span>
                 </div>
+                <span className="text-[10.5px] text-slate-400 block">
+                  Example: 20 card holders per box. Ordering 10 boxes = 200 {unit === 'UNT' ? 'UNT' : 'PCS'}.
+                </span>
               </div>
+            )}
 
-              <div>
-                <label className="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  1 Carton (CTN) =
+            {selectedPackagingCategory === 'CTN' && (
+              <div className="p-3 rounded-xl bg-white dark:bg-white/[0.03] border border-slate-200 dark:border-white/[0.08] space-y-1.5">
+                <label className="block text-[11px] font-semibold text-slate-700 dark:text-slate-300">
+                  Carton Multiplier: How many {unit === 'UNT' ? 'units' : 'pieces'} in 1 Carton?
                 </label>
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-2 max-w-xs">
+                  <span className="text-xs font-bold text-slate-500">1 Carton (CTN) =</span>
                   <input
                     type="number"
                     min="1"
                     value={cartonMultiplier}
                     onChange={(e) => setCartonMultiplier(e.target.value)}
-                    className="w-full px-2.5 py-1.5 text-xs template-input border border-slate-200 dark:border-white/[0.08] rounded-lg text-slate-900 dark:text-white"
+                    className="w-24 px-2.5 py-1.5 text-xs template-input border border-slate-200 dark:border-white/[0.08] rounded-lg text-slate-900 dark:text-white font-bold"
                   />
-                  <span className="text-[11px] text-slate-400">{unit === 'UNT' ? 'UNT' : 'PCS'}</span>
+                  <span className="text-xs text-slate-400">{unit === 'UNT' ? 'UNT' : 'PCS'}</span>
                 </div>
+                <span className="text-[10.5px] text-slate-400 block">
+                  Example: 100 card holders per shipping carton. Ordering 5 cartons = 500 {unit === 'UNT' ? 'UNT' : 'PCS'}.
+                </span>
               </div>
+            )}
 
-              <div>
-                <label className="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  1 Bundle (BDL) =
+            {selectedPackagingCategory === 'BDL' && (
+              <div className="p-3 rounded-xl bg-white dark:bg-white/[0.03] border border-slate-200 dark:border-white/[0.08] space-y-1.5">
+                <label className="block text-[11px] font-semibold text-slate-700 dark:text-slate-300">
+                  Bundle Multiplier: How many {unit === 'UNT' ? 'units' : 'pieces'} in 1 Bundle?
                 </label>
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-2 max-w-xs">
+                  <span className="text-xs font-bold text-slate-500">1 Bundle (BDL) =</span>
                   <input
                     type="number"
                     min="1"
                     value={bundleMultiplier}
                     onChange={(e) => setBundleMultiplier(e.target.value)}
-                    className="w-full px-2.5 py-1.5 text-xs template-input border border-slate-200 dark:border-white/[0.08] rounded-lg text-slate-900 dark:text-white"
+                    className="w-24 px-2.5 py-1.5 text-xs template-input border border-slate-200 dark:border-white/[0.08] rounded-lg text-slate-900 dark:text-white font-bold"
                   />
-                  <span className="text-[11px] text-slate-400">{unit === 'UNT' ? 'UNT' : 'PCS'}</span>
+                  <span className="text-xs text-slate-400">{unit === 'UNT' ? 'UNT' : 'PCS'}</span>
                 </div>
+                <span className="text-[10.5px] text-slate-400 block">
+                  Example: 25 lanyards tied in a bundle. Ordering 4 bundles = 100 {unit === 'UNT' ? 'UNT' : 'PCS'}.
+                </span>
               </div>
-            </div>
+            )}
           </div>
 
           <div>
