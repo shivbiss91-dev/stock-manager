@@ -39,6 +39,8 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({ isOpen, onClose, onI
   const [warehouseId, setWarehouseId] = useState('wh-001');
   const [rackLocation, setRackLocation] = useState('Rack B2-01');
   const [supplierId, setSupplierId] = useState('sup-001');
+  const [imageUrl, setImageUrl] = useState('/products/card-holder.svg');
+  const [isCustomImage, setIsCustomImage] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 

@@ -479,14 +479,6 @@ export const inventoryService = {
     return itemsDatabase.map(toComputedItem);
   },
 
-  async deleteItem(id: string): Promise<boolean> {
-    await new Promise((res) => setTimeout(res, 20));
-    const items = getStoredItems();
-    const next = items.filter((item) => item.id !== id);
-    saveStoredItems(next);
-    return true;
-  },
-
   _seedInventoryForTesting(items: InventoryItem[]): void {
     saveStoredItems(items);
   },

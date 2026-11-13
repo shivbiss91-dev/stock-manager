@@ -1,15 +1,10 @@
 import { Supplier } from '../types/sales';
 import { StorageService, STORAGE_KEYS } from './storageService';
-import { MOCK_SUPPLIERS } from '../data/suppliers';
 
 export const supplierService = {
   async getSuppliers(category?: string): Promise<Supplier[]> {
     await new Promise((res) => setTimeout(res, 30));
-    let list = StorageService.get<Supplier[]>(STORAGE_KEYS.SUPPLIERS, []);
-    if (!list || list.length === 0) {
-      StorageService.set(STORAGE_KEYS.SUPPLIERS, MOCK_SUPPLIERS);
-      list = MOCK_SUPPLIERS;
-    }
+    const list = StorageService.get<Supplier[]>(STORAGE_KEYS.SUPPLIERS, []);
     if (!category || category === 'all') {
       return [...list];
     }
