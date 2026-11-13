@@ -3,6 +3,7 @@ import { Modal } from '../common/Modal';
 import { Button } from '../common/Button';
 import { Input } from '../common/Input';
 import { Select } from '../common/Select';
+import { ProductImage } from '../common/ProductImage';
 import { ComputedInventoryItem } from '../../types/inventory';
 import { inventoryService } from '../../services/inventoryService';
 import { useAuthStore } from '../../store/authStore';
@@ -197,11 +198,20 @@ export const QuickStockAdjustmentModal: React.FC<QuickStockAdjustmentModalProps>
 
         {/* Product Overview Pill */}
         <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-white/[0.03] border border-slate-200/80 dark:border-white/[0.06] flex items-center justify-between text-xs">
-          <div>
-            <p className="font-bold text-slate-800 dark:text-slate-100">{item.name}</p>
-            <p className="text-slate-500 mt-0.5">
-              Storage: <strong className="text-slate-700 dark:text-slate-300">{item.warehouseName} ({item.rackLocation})</strong>
-            </p>
+          <div className="flex items-center gap-3">
+            <ProductImage
+              src={item.images?.[0]}
+              alt={item.name}
+              category={item.materialCategory}
+              className="w-10 h-10 rounded-lg object-cover flex-shrink-0"
+              fallbackIconSize={18}
+            />
+            <div>
+              <p className="font-bold text-slate-800 dark:text-slate-100">{item.name}</p>
+              <p className="text-slate-500 mt-0.5">
+                Storage: <strong className="text-slate-700 dark:text-slate-300">{item.warehouseName} ({item.rackLocation})</strong>
+              </p>
+            </div>
           </div>
           <div className="text-right">
             <span className="text-[11px] text-slate-400 block">Current Balance</span>

@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bagBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0F172A"/>
+      <stop offset="100%" stop-color="#1E293B"/>
+    </linearGradient>
+    <linearGradient id="pouchFilm" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#64748B" stop-opacity="0.12"/>
+    </linearGradient>
+    <filter id="bagShadow" x="-10%" y="-10%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#000" flood-opacity="0.45"/>
+    </filter>
+  </defs>
+  <rect width="400" height="400" rx="24" fill="url(#bagBg)"/>
+  <g filter="url(#bagShadow)">
+    <rect x="90" y="60" width="220" height="290" rx="16" fill="url(#pouchFilm)" stroke="#E2E8F0" stroke-width="2" stroke-opacity="0.6"/>
+    <rect x="90" y="60" width="220" height="45" rx="16" fill="#334155" fill-opacity="0.3"/>
+    <circle cx="200" cy="80" r="10" fill="#0F172A" stroke="#94A3B8" stroke-width="1.5"/>
+    <rect x="95" y="108" width="210" height="8" rx="4" fill="#EF4444" stroke="#DC2626" stroke-width="1"/>
+    <line x1="95" y1="120" x2="305" y2="120" stroke="#94A3B8" stroke-width="1.5" stroke-dasharray="3,3"/>
+    <path d="M 105 130 L 295 130 L 270 335 L 105 335 Z" fill="#FFFFFF" fill-opacity="0.05"/>
+    
+    <!-- Assorted Buttons inside bag -->
+    <circle cx="160" cy="180" r="32" fill="#F59E0B" stroke="#B45309" stroke-width="3"/>
+    <circle cx="160" cy="180" r="24" fill="none" stroke="#D97706" stroke-width="1.5" stroke-dasharray="4,2"/>
+    <circle cx="152" cy="172" r="3" fill="#78350F"/>
+    <circle cx="168" cy="172" r="3" fill="#78350F"/>
+    <circle cx="152" cy="188" r="3" fill="#78350F"/>
+    <circle cx="168" cy="188" r="3" fill="#78350F"/>
+
+    <circle cx="235" cy="225" r="28" fill="#0EA5E9" stroke="#0284C7" stroke-width="3"/>
+    <circle cx="235" cy="225" r="21" fill="none" stroke="#0369A1" stroke-width="1.5"/>
+    <circle cx="228" cy="218" r="2.8" fill="#0C4A6E"/>
+    <circle cx="242" cy="218" r="2.8" fill="#0C4A6E"/>
+    <circle cx="228" cy="232" r="2.8" fill="#0C4A6E"/>
+    <circle cx="242" cy="232" r="2.8" fill="#0C4A6E"/>
+
+    <circle cx="170" cy="275" r="26" fill="#F43F5E" stroke="#BE123C" stroke-width="3"/>
+    <circle cx="170" cy="275" r="19" fill="none" stroke="#E11D48" stroke-width="1.5"/>
+    <circle cx="164" cy="269" r="2.5" fill="#881337"/>
+    <circle cx="176" cy="269" r="2.5" fill="#881337"/>
+    <circle cx="164" cy="281" r="2.5" fill="#881337"/>
+    <circle cx="176" cy="281" r="2.5" fill="#881337"/>
+
+    <circle cx="240" cy="305" r="20" fill="#10B981" stroke="#047857" stroke-width="2.5"/>
+    <circle cx="240" cy="305" r="14" fill="none" stroke="#059669" stroke-width="1"/>
+    <circle cx="236" cy="301" r="2" fill="#064E3B"/>
+    <circle cx="244" cy="301" r="2" fill="#064E3B"/>
+    <circle cx="236" cy="309" r="2" fill="#064E3B"/>
+    <circle cx="244" cy="309" r="2" fill="#064E3B"/>
+  </g>
+</svg>

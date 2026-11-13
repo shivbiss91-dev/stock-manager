@@ -1,19 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Modal } from '../common/Modal';
 import { Button } from '../common/Button';
 import { Input } from '../common/Input';
 import { Select } from '../common/Select';
 import { inventoryService } from '../../services/inventoryService';
-import { MaterialCategory, UnitOfMeasurement } from '../../types/inventory';
+import { MaterialCategory } from '../../types/inventory';
 import { MATERIAL_CATEGORIES } from '../../data/materialCategories';
-import { MOCK_SUPPLIERS } from '../../data/suppliers';
-import { MOCK_WAREHOUSES } from '../../data/warehouses';
-import { PackagePlus, CheckCircle2, Layers } from 'lucide-react';
+import { PackagePlus, Layers, Image as ImageIcon, Upload, Trash2 } from 'lucide-react';
 import {
   PREDEFINED_UNITS,
   PredefinedUnit,
   PackagingConversions,
-  DEFAULT_PACKAGING_CONVERSIONS,
 } from '../../utils/unitConversions';
 
 interface AddItemModalProps {
@@ -45,31 +42,85 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({ isOpen, onClose, onI
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      setName('');
+      setCategory('card_holder');
+      setCurrentStock(0);
+      setUnit('PCS');
+      setReorderLevel(0);
+      setReorderQuantity(0);
+      setBoxMultiplier(20);
+      setCartonMultiplier(100);
+      setBundleMultiplier(25);
+      setCostPrice(0);
+      setSellingPrice(0);
+      setImageUrl('/products/card-holder.svg');
+      setIsCustomImage(false);
+      setError(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  }, [isOpen]);
+
   const selectedCategoryMeta = MATERIAL_CATEGORIES.find((c) => c.id === category);
 
   const handleCategoryChange = (cat: MaterialCategory) => {
     setCategory(cat);
     const meta = MATERIAL_CATEGORIES.find((c) => c.id === cat);
-    if (meta) {
-      setSubtype(meta.subtypes[0] || 'Standard');
-      setHsnCode(meta.defaultHsn);
-      setGstRate(meta.defaultGstRate);
+    if (!isCustomImage && meta) {
+      setImageUrl(meta.imageUrl);
     }
+  };
+
+  const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const result = event.target?.result as string;
+      if (result) {
+        setImageUrl(result);
+        setIsCustomImage(true);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleClearImage = () => {
+    setImageUrl('');
+    setIsCustomImage(true);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const generateSku = (cat: MaterialCategory, prodName: string): string => {
+    const catPrefixMap: Record<string, string> = {
+      card_holder: 'CH',
+      lanyard: 'LAN',
+      hook: 'HK',
+      button_bag: 'BB',
+    };
+    const prefix = catPrefixMap[cat] || 'PRD';
+    const cleanName = prodName.replace(/[^a-zA-Z0-9]/g, '').slice(0, 3).toUpperCase() || 'ITM';
+    const randomSuffix = Math.floor(1000 + Math.random() * 9000);
+    return `${prefix}-${cleanName}-${randomSuffix}`;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim() || !sku.trim()) {
-      setError('Please provide product name and unique SKU.');
+    if (!name.trim()) {
+      setError('Please provide a product title.');
       return;
     }
     setError(null);
     setIsLoading(true);
 
     try {
-      const wh = MOCK_WAREHOUSES.find((w) => w.id === warehouseId) || MOCK_WAREHOUSES[1];
-      const sup = MOCK_SUPPLIERS.find((s) => s.id === supplierId) || MOCK_SUPPLIERS[0];
-
       const packagingConversions: PackagingConversions = {
         baseUnit: unit === 'UNT' ? 'UNT' : 'PCS',
         dozenMultiplier: 12,
@@ -78,38 +129,47 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({ isOpen, onClose, onI
         bundleMultiplier: Number(bundleMultiplier) || 25,
       };
 
+      const finalImages = imageUrl.trim()
+        ? [imageUrl.trim()]
+        : selectedCategoryMeta
+        ? [selectedCategoryMeta.imageUrl]
+        : ['/products/card-holder.svg'];
+
+      const autoSku = generateSku(category, name.trim());
+
       await inventoryService.createItem({
         name: name.trim(),
-        sku: sku.trim().toUpperCase(),
+        sku: autoSku,
         materialCategory: category,
-        materialSubtype: subtype,
-        description: `Industrial wholesale item: ${name}.`,
-        currentStock: Number(currentStock),
+        materialSubtype: 'Standard',
+        description: `Industrial catalog item: ${name.trim()}.`,
+        currentStock: Number(currentStock) || 0,
         unit,
         baseUnit: unit === 'UNT' ? 'UNT' : 'PCS',
-        reorderLevel: Number(reorderLevel),
-        reorderQuantity: Number(reorderQuantity) || Number(reorderLevel) * 2,
+        reorderLevel: Number(reorderLevel) || 0,
+        reorderQuantity: Number(reorderQuantity) || (Number(reorderLevel) > 0 ? Number(reorderLevel) * 2 : 10),
         packagingConversions,
-        costPrice: Number(costPrice),
-        sellingPrice: Number(sellingPrice),
-        gstRate: Number(gstRate),
-        hsnCode,
-        warehouseId: wh.id,
-        warehouseName: wh.name,
-        rackLocation,
-        supplierId: sup.id,
-        supplierName: sup.companyName,
-        barcode: `890${Math.floor(100000000 + Math.random() * 900000000)}`,
-        images: selectedCategoryMeta ? [selectedCategoryMeta.imageUrl] : [],
+        costPrice: Number(costPrice) || 0,
+        sellingPrice: Number(sellingPrice) || 0,
+        gstRate: 0,
+        hsnCode: '',
+        warehouseId: '',
+        warehouseName: 'Unassigned',
+        rackLocation: '',
+        supplierId: '',
+        supplierName: 'Unassigned',
+        barcode: '',
+        images: finalImages,
         isArchived: false,
       });
 
       setIsLoading(false);
       onItemAdded();
       onClose();
-    } catch (err) {
+    } catch (err: unknown) {
       setIsLoading(false);
-      setError(err instanceof Error ? err.message : 'Failed to add item.');
+      const msg = err instanceof Error ? err.message : 'Failed to add item.';
+      setError(msg);
     }
   };
 
@@ -117,36 +177,123 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({ isOpen, onClose, onI
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Add New Warehouse Item"
-      subtitle="Enter specifications, wholesale rates, HSN tax code, and storage location"
+      title="Create Master Product Record"
+      subtitle="Add a new catalog item with image, pricing, and packaging"
       size="lg"
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         {error && (
-          <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 text-xs text-rose-600 dark:text-rose-400">
+          <div className="p-3 bg-red-500/10 border border-red-500/20 text-red-500 text-xs rounded-xl">
             {error}
           </div>
         )}
 
+        {/* Product Image Inserting Section */}
+        <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/[0.06] space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <ImageIcon className="w-4 h-4 text-accent-orange" />
+              <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                Product Image (Upload File or Enter URL)
+              </span>
+            </div>
+            <span className="text-[10px] text-slate-400">JPG, PNG, WebP or SVG</span>
+          </div>
+
+          <div className="flex items-start sm:items-center gap-4">
+            {/* Interactive Image Preview Box */}
+            <div className="relative w-20 h-20 rounded-2xl overflow-hidden border-2 border-dashed border-slate-300 dark:border-white/[0.12] bg-white dark:bg-[#0E1118] flex-shrink-0 flex items-center justify-center group shadow-inner">
+              {imageUrl ? (
+                <img
+                  src={imageUrl}
+                  alt={name || 'Product preview'}
+                  className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                  onError={(e) => {
+                    (e.currentTarget as HTMLImageElement).src =
+                      selectedCategoryMeta?.imageUrl || '/products/card-holder.svg';
+                  }}
+                />
+              ) : (
+                <div className="flex flex-col items-center justify-center text-slate-400">
+                  <ImageIcon className="w-6 h-6 stroke-1" />
+                  <span className="text-[9px] mt-1 font-medium">No Image</span>
+                </div>
+              )}
+            </div>
+
+            <div className="flex-1 space-y-2">
+              {/* URL Input */}
+              <div className="relative">
+                <input
+                  type="text"
+                  value={imageUrl}
+                  onChange={(e) => {
+                    setImageUrl(e.target.value);
+                    setIsCustomImage(true);
+                  }}
+                  placeholder="Paste image URL (e.g. /products/card-holder.svg or https://...)"
+                  className="w-full px-3 py-1.5 text-xs template-input border border-slate-200 dark:border-white/[0.08] rounded-xl text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-accent-orange/30"
+                />
+              </div>
+
+              {/* Action Buttons: Choose File & Clear */}
+              <div className="flex flex-wrap items-center gap-2">
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  accept="image/*"
+                  onChange={handleImageFileChange}
+                  className="hidden"
+                />
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="px-3 py-1.5 text-xs font-semibold rounded-xl border border-slate-200 dark:border-white/[0.1] bg-white dark:bg-white/[0.04] text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/[0.08] flex items-center gap-1.5 transition-colors shadow-sm"
+                >
+                  <Upload className="w-3.5 h-3.5 text-accent-orange" />
+                  <span>Choose Image File</span>
+                </button>
+
+                {imageUrl && (
+                  <button
+                    type="button"
+                    onClick={handleClearImage}
+                    className="px-2.5 py-1.5 text-xs rounded-xl text-rose-500 hover:bg-rose-500/10 flex items-center gap-1 transition-colors"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                    <span>Remove</span>
+                  </button>
+                )}
+
+                {isCustomImage && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setImageUrl(selectedCategoryMeta?.imageUrl || '/products/card-holder.svg');
+                      setIsCustomImage(false);
+                    }}
+                    className="text-[11px] text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 underline"
+                  >
+                    Reset to Category Default
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Product Details Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
           <Input
-            label="Product Name"
-            placeholder="e.g. Gurjan BWP Marine Plywood 18mm"
+            label="Product Title *"
+            placeholder="e.g. Card Holder"
             value={name}
             onChange={(e) => setName(e.target.value)}
             required
           />
 
-          <Input
-            label="SKU Identifier"
-            placeholder="e.g. WD-PLY-GRJ-18MM"
-            value={sku}
-            onChange={(e) => setSku(e.target.value.toUpperCase())}
-            required
-          />
-
           <Select
-            label="Material Category"
+            label="Product Category *"
             value={category}
             onChange={(e) => handleCategoryChange(e.target.value as MaterialCategory)}
             options={MATERIAL_CATEGORIES.map((c) => ({
@@ -156,117 +303,50 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({ isOpen, onClose, onI
           />
 
           <Select
-            label="Sub-Type"
-            value={subtype}
-            onChange={(e) => setSubtype(e.target.value)}
-            options={
-              selectedCategoryMeta?.subtypes.map((st) => ({
-                value: st,
-                label: st,
-              })) || []
-            }
-          />
-
-          <Input
-            label={`Initial Stock Quantity (${unit})`}
-            type="number"
-            min={0}
-            value={currentStock}
-            onChange={(e) => setCurrentStock(Math.max(0, parseInt(e.target.value) || 0))}
-            required
-          />
-
-          <Select
             label="Unit of Measurement *"
             value={unit}
             onChange={(e) => setUnit(e.target.value as PredefinedUnit)}
             options={PREDEFINED_UNITS.map((u) => ({
               value: u.code,
-              label: `${u.label}${u.isPackUnit ? ` - ${u.description}` : ''}`,
+              label: u.label,
             }))}
           />
 
           <Input
-            label={`Minimum Stock Threshold (${unit})`}
+            label="Opening Stock"
             type="number"
-            min={1}
+            min={0}
+            value={currentStock}
+            onChange={(e) => setCurrentStock(Math.max(0, parseInt(e.target.value) || 0))}
+            helperText="Defaults to 0 for starter catalog items."
+          />
+
+          <Input
+            label="Min Stock Threshold (Reorder Level)"
+            type="number"
+            min={0}
             value={reorderLevel}
-            onChange={(e) => setReorderLevel(Math.max(1, parseInt(e.target.value) || 1))}
-            required
+            onChange={(e) => setReorderLevel(Math.max(0, parseInt(e.target.value) || 0))}
           />
 
           <Input
-            label={`Suggested Reorder Quantity (${unit})`}
+            label="Purchase / Cost Price (₹ excl. GST) *"
             type="number"
-            min={1}
-            value={reorderQuantity}
-            onChange={(e) => setReorderQuantity(Math.max(1, parseInt(e.target.value) || 1))}
-            required
-          />
-
-          <Input
-            label="HSN Code"
-            value={hsnCode}
-            onChange={(e) => setHsnCode(e.target.value)}
-            required
-          />
-
-          <Input
-            label="Wholesale Cost Price (₹ excl. GST)"
-            type="number"
-            min={1}
+            step="0.01"
+            min={0}
             value={costPrice}
-            onChange={(e) => setCostPrice(Math.max(1, parseInt(e.target.value) || 1))}
-            required
+            onChange={(e) => setCostPrice(Math.max(0, parseFloat(e.target.value) || 0))}
+            placeholder="0.00"
           />
 
           <Input
-            label="Selling Rate (₹ excl. GST)"
+            label="Selling Rate (₹ excl. GST) *"
             type="number"
-            min={1}
+            step="0.01"
+            min={0}
             value={sellingPrice}
-            onChange={(e) => setSellingPrice(Math.max(1, parseInt(e.target.value) || 1))}
-            required
-          />
-
-          <Select
-            label="GST Rate (%)"
-            value={String(gstRate)}
-            onChange={(e) => setGstRate(parseInt(e.target.value) || 18)}
-            options={[
-              { value: '0', label: '0% (Exempt)' },
-              { value: '5', label: '5%' },
-              { value: '12', label: '12%' },
-              { value: '18', label: '18% (Standard)' },
-              { value: '28', label: '28%' },
-            ]}
-          />
-
-          <Select
-            label="Storage Warehouse"
-            value={warehouseId}
-            onChange={(e) => setWarehouseId(e.target.value)}
-            options={MOCK_WAREHOUSES.filter((w) => w.id !== 'all').map((w) => ({
-              value: w.id,
-              label: w.name,
-            }))}
-          />
-
-          <Input
-            label="Rack / Aisle Location"
-            placeholder="e.g. BHW-A02-S1"
-            value={rackLocation}
-            onChange={(e) => setRackLocation(e.target.value)}
-          />
-
-          <Select
-            label="Primary Supplier"
-            value={supplierId}
-            onChange={(e) => setSupplierId(e.target.value)}
-            options={MOCK_SUPPLIERS.slice(0, 15).map((s) => ({
-              value: s.id,
-              label: s.companyName,
-            }))}
+            onChange={(e) => setSellingPrice(Math.max(0, parseFloat(e.target.value) || 0))}
+            placeholder="0.00"
           />
         </div>
 
@@ -385,18 +465,18 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({ isOpen, onClose, onI
           )}
         </div>
 
-        <div className="flex justify-end gap-2 pt-4 border-t border-slate-100 dark:border-white/[0.06]">
-          <Button variant="outline" size="md" type="button" onClick={onClose}>
+        <div className="flex justify-end gap-2 pt-2 border-t border-slate-100 dark:border-white/[0.06]">
+          <Button variant="outline" size="sm" type="button" onClick={onClose} disabled={isLoading}>
             Cancel
           </Button>
           <Button
             variant="primary"
-            size="md"
+            size="sm"
             type="submit"
             isLoading={isLoading}
             leftIcon={<PackagePlus className="w-4 h-4" />}
           >
-            Add Item to Inventory
+            Create Item Record
           </Button>
         </div>
       </form>

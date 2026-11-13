@@ -14,7 +14,7 @@ const SHORTCUTS: ShortcutGroup[] = [
     category: 'Navigation',
     items: [
       { key: 'G then D', description: 'Go to Dashboard Home' },
-      { key: 'G then M', description: 'Go to Materials Categories' },
+      { key: 'G then P', description: 'Go to Items & Products' },
       { key: 'G then I', description: 'Go to Invoices' },
       { key: 'G then W', description: 'Go to Warehouses' },
       { key: 'N', description: 'Create New GST Tax Invoice' },
@@ -76,9 +76,9 @@ export const KeyboardShortcutsModal: React.FC = () => {
         if (e.key === 'd' || e.key === 'D') {
           e.preventDefault();
           navigate('/dashboard');
-        } else if (e.key === 'm' || e.key === 'M') {
+        } else if (e.key === 'p' || e.key === 'P') {
           e.preventDefault();
-          navigate('/materials');
+          navigate('/items');
         } else if (e.key === 'i' || e.key === 'I') {
           e.preventDefault();
           navigate('/sales/invoices');

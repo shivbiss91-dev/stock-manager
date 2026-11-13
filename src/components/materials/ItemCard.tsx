@@ -91,10 +91,11 @@ export const ItemCard: React.FC<ItemCardProps> = ({
             className="rounded border-slate-300 dark:border-white/20 text-accent-orange focus:ring-accent-orange w-4 h-4 bg-transparent cursor-pointer"
           />
 
-          <img
-            src={item.images[0]}
+          <ProductImage
+            src={item.images?.[0]}
             alt={item.name}
-            className="w-12 h-12 rounded-xl object-cover flex-shrink-0 bg-slate-100 dark:bg-white/[0.05]"
+            category={item.materialCategory}
+            className="w-12 h-12 rounded-xl object-cover flex-shrink-0"
           />
 
           <div className="min-w-0">
@@ -114,9 +115,9 @@ export const ItemCard: React.FC<ItemCardProps> = ({
               {item.name}
             </h4>
             <div className="flex items-center gap-3 text-[11px] text-slate-400 mt-0.5">
-              <span>HSN: {item.hsnCode}</span>
+              <span>HSN: {item.hsnCode || 'Unset'}</span>
               <span>•</span>
-              <span>Rack: {item.rackLocation}</span>
+              <span>Rack: {item.rackLocation || 'Unassigned'}</span>
             </div>
           </div>
         </div>
@@ -182,9 +183,10 @@ export const ItemCard: React.FC<ItemCardProps> = ({
     >
       {/* Thumbnail Header with Overlays */}
       <div className="relative h-40 w-full overflow-hidden bg-slate-900">
-        <img
-          src={item.images[0]}
+        <ProductImage
+          src={item.images?.[0]}
           alt={item.name}
+          category={item.materialCategory}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-black/30" />

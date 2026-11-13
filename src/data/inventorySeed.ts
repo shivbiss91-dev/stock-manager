@@ -1,4 +1,5 @@
 import { InventoryItem } from '../types/inventory';
+import { DEFAULT_PACKAGING_CONVERSIONS } from '../utils/unitConversions';
 
 /**
  * Master Inventory Seed Catalog for Card Holders & ID Badge Supplies.

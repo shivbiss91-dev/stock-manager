@@ -5,25 +5,13 @@
     <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>StockVista — Smart Inventory. Strong Business.</title>
-    <script>
-      // When served directly on GitHub Pages root (main branch), route to pre-compiled bundle in /docs/
-      if (window.location.hostname.endsWith('github.io')) {
-        var p = window.location.pathname;
-        if (!p.endsWith('/docs') && !p.endsWith('/docs/')) {
-          var base = p.replace(/\/+$/, '');
-          window.location.replace(base + '/docs/' + window.location.hash);
-        }
-      }
-    </script>
-    <noscript>
-      <meta http-equiv="refresh" content="0; url=./docs/">
-    </noscript>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Mulish:ital,wght@0,300..900;1,300..900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script type="module" crossorigin src="./assets/index-Bmk0GoIb.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-9pGnF8iN.css">
   </head>
   <body class="bg-surface-light text-slate-800 dark:bg-surface-dark dark:text-slate-100 antialiased min-h-screen">
     <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

@@ -6,6 +6,7 @@ import {
 } from '../types/inventory';
 import { StockStatus } from '../types/common';
 import { stockMovementService } from './stockMovementService';
+import { auditLogService } from './auditLogService';
 import { notificationService } from './notificationService';
 import {
   convertToBaseQuantity,
@@ -314,6 +315,21 @@ export const inventoryService = {
       console.warn('Failed to record stock movement ledger entry:', err);
     }
 
+    // Record in audit log
+    try {
+      await auditLogService.logAction({
+        module: 'inventory',
+        action: 'stock_adjusted',
+        targetId: item.id,
+        targetDescription: `${item.name} (${item.sku})`,
+        userName,
+        userRole,
+        oldValue: `${previousStock} ${item.unit}`,
+        newValue: `${nextStock} ${item.unit} (${delta >= 0 ? '+' : ''}${delta})`,
+        metadata: { reason, delta, previousStock, nextStock },
+      });
+    } catch {}
+
     // Automatically trigger low-stock and out-of-stock alerts
     try {
       if (nextStock === 0) {
@@ -340,7 +356,9 @@ export const inventoryService = {
 
   async updateItem(
     itemId: string,
-    patch: Partial<Omit<InventoryItem, 'id' | 'createdAt'>>
+    patch: Partial<Omit<InventoryItem, 'id' | 'createdAt'>>,
+    userIdArg?: string,
+    userNameArg?: string
   ): Promise<ComputedInventoryItem> {
     await new Promise((res) => setTimeout(res, 40));
     const itemsDatabase = getStoredItems();
@@ -356,8 +374,23 @@ export const inventoryService = {
       }
     }
 
+    const prevDescription = `Price: ₹${item.sellingPrice}, Stock: ${item.currentStock}`;
     Object.assign(item, patch, { updatedAt: new Date().toISOString() });
     saveStoredItems(itemsDatabase);
+
+    try {
+      await auditLogService.logAction({
+        userId: userIdArg || 'admin-1',
+        userName: userNameArg || 'Authorized Admin',
+        userRole: 'admin',
+        action: 'item_updated',
+        module: 'inventory',
+        targetId: item.id,
+        targetDescription: `${item.name} (${item.sku})`,
+        previousValue: prevDescription,
+        newValue: Object.entries(patch).map(([k, v]) => `${k}: ${v}`).join(', '),
+      });
+    } catch {}
 
     // Check if new reorderLevel triggers an alert with current stock
     if (patch.reorderLevel !== undefined && item.currentStock <= item.reorderLevel && item.currentStock > 0) {
@@ -399,12 +432,45 @@ export const inventoryService = {
 
     itemsDatabase.unshift(created);
     saveStoredItems(itemsDatabase);
+
+    try {
+      await auditLogService.logAction({
+        userId: 'admin-1',
+        userName: 'Authorized Admin',
+        userRole: 'admin',
+        action: 'item_created',
+        module: 'inventory',
+        targetId: created.id,
+        targetDescription: `${created.name} (${created.sku})`,
+        newValue: `Created initial product master record with opening stock ${created.currentStock} ${created.unit}`,
+      });
+    } catch {}
     return toComputedItem(created);
   },
 
   async getCategoryItemCount(category: MaterialCategory): Promise<number> {
     const itemsDatabase = getStoredItems();
     return itemsDatabase.filter((i) => i.materialCategory === category).length;
+  },
+
+  async deleteItem(itemId: string): Promise<boolean> {
+    await new Promise((res) => setTimeout(res, 40));
+    const itemsDatabase = getStoredItems();
+    const index = itemsDatabase.findIndex((i) => i.id === itemId);
+    if (index === -1) return false;
+    itemsDatabase.splice(index, 1);
+    saveStoredItems(itemsDatabase);
+    return true;
+  },
+
+  async deleteItems(itemIds: string[]): Promise<boolean> {
+    await new Promise((res) => setTimeout(res, 40));
+    const idSet = new Set(itemIds);
+    let itemsDatabase = getStoredItems();
+    const originalCount = itemsDatabase.length;
+    itemsDatabase = itemsDatabase.filter((i) => !idSet.has(i.id));
+    saveStoredItems(itemsDatabase);
+    return itemsDatabase.length < originalCount;
   },
 
   async getAllItems(): Promise<ComputedInventoryItem[]> {

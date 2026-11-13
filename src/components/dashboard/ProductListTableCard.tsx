@@ -3,17 +3,15 @@ import { Card } from '../common/Card';
 import { Badge } from '../common/Badge';
 import { Button } from '../common/Button';
 import { AddItemModal } from './AddItemModal';
+import { EditItemModal } from '../itemDetail/EditItemModal';
+import { ProductImage } from '../common/ProductImage';
 import { QuickStockAdjustmentModal } from './QuickStockAdjustmentModal';
 import { inventoryService } from '../../services/inventoryService';
 import { ComputedInventoryItem, MaterialCategory } from '../../types/inventory';
 import { StockStatus } from '../../types/common';
 import { formatINR } from '../../utils/formatINR';
 import { formatPackagingBreakdown } from '../../utils/unitConversions';
-import { MATERIAL_CATEGORIES } from '../../data/materialCategories';
-import { supplierService } from '../../services/supplierService';
-import { warehouseService } from '../../services/warehouseService';
-import { Supplier } from '../../types/sales';
-import { Warehouse } from '../../types/warehouse';
+import { MATERIAL_CATEGORIES, formatCategoryName } from '../../data/materialCategories';
 import {
   Search,
   Plus,
@@ -30,6 +28,7 @@ import {
   Box,
   FileSpreadsheet,
   FileText,
+  Trash2,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -55,15 +54,6 @@ export const ProductListTableCard: React.FC<ProductListTableCardProps> = ({
   // Filters
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<MaterialCategory | 'all'>('all');
-  const [selectedSupplier, setSelectedSupplier] = useState<string>('all');
-  const [selectedStorageWh, setSelectedStorageWh] = useState<string>('all');
-  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
-  const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
-
-  useEffect(() => {
-    supplierService.getSuppliers().then(setSuppliers);
-    warehouseService.getWarehouses().then(setWarehouses);
-  }, []);
 
   // Selection & Row Click Fade
   const [selectedRowIds, setSelectedRowIds] = useState<Record<string, boolean>>({});
@@ -71,16 +61,32 @@ export const ProductListTableCard: React.FC<ProductListTableCardProps> = ({
 
   // Modals & Popovers
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [selectedItemForEdit, setSelectedItemForEdit] = useState<ComputedInventoryItem | null>(null);
   const [adjustmentItem, setAdjustmentItem] = useState<ComputedInventoryItem | null>(null);
   const [adjustmentMode, setAdjustmentMode] = useState<'add' | 'deduct' | 'direct'>('add');
+  const [itemToDelete, setItemToDelete] = useState<ComputedInventoryItem | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [columnSettingsOpen, setColumnSettingsOpen] = useState(false);
   const [exportMenuOpen, setExportMenuOpen] = useState(false);
+
+  const handleDeleteConfirmed = async () => {
+    if (!itemToDelete) return;
+    setIsDeleting(true);
+    try {
+      await inventoryService.deleteItem(itemToDelete.id);
+      await loadData();
+      setItemToDelete(null);
+    } catch (err) {
+      console.error('Failed to delete item:', err);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   // Column Visibility State
   const [visibleColumns, setVisibleColumns] = useState({
     select: true,
     product: true,
-    supplier: true,
     category: true,
     cost: true,
     onHand: true,
@@ -93,11 +99,9 @@ export const ProductListTableCard: React.FC<ProductListTableCardProps> = ({
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const activeWarehouse = selectedStorageWh !== 'all' ? selectedStorageWh : warehouseId;
       const res = await inventoryService.getItems({
-        warehouseId: activeWarehouse,
+        warehouseId,
         category: selectedCategory,
-        supplierId: selectedSupplier,
         stockStatus: statusFilter,
         search: searchQuery,
         page,
@@ -114,11 +118,11 @@ export const ProductListTableCard: React.FC<ProductListTableCardProps> = ({
 
   useEffect(() => {
     setPage(1);
-  }, [warehouseId, statusFilter, selectedCategory, selectedSupplier, selectedStorageWh, searchQuery]);
+  }, [warehouseId, statusFilter, selectedCategory, searchQuery]);
 
   useEffect(() => {
     loadData();
-  }, [warehouseId, statusFilter, selectedCategory, selectedSupplier, selectedStorageWh, searchQuery, page, pageSize]);
+  }, [warehouseId, statusFilter, selectedCategory, searchQuery, page, pageSize]);
 
   // Select all checkbox toggle
   const allSelected = items.length > 0 && items.every((i) => selectedRowIds[i.id]);
@@ -152,7 +156,6 @@ export const ProductListTableCard: React.FC<ProductListTableCardProps> = ({
     const headers = [
       'SKU',
       'Product Name',
-      'Supplier',
       'Category',
       'Cost (INR)',
       'On Hand',
@@ -166,8 +169,7 @@ export const ProductListTableCard: React.FC<ProductListTableCardProps> = ({
     const rows = items.map((i) => [
       `"${i.sku}"`,
       `"${i.name.replace(/"/g, '""')}"`,
-      `"${i.supplierName}"`,
-      i.materialCategory,
+      formatCategoryName(i.materialCategory),
       i.costPrice,
       i.currentStock,
       i.unit,
@@ -318,7 +320,7 @@ export const ProductListTableCard: React.FC<ProductListTableCardProps> = ({
       </div>
 
       {/* Toolbar Filter Controls */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-2.5 mb-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 mb-4">
         {/* Search Input */}
         <div className="relative sm:col-span-2">
           <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -338,42 +340,10 @@ export const ProductListTableCard: React.FC<ProductListTableCardProps> = ({
             onChange={(e) => setSelectedCategory(e.target.value as MaterialCategory | 'all')}
             className="w-full text-xs rounded-xl border border-slate-200 dark:border-white/[0.08] bg-slate-50 dark:bg-[#1A1D26] px-3.5 py-2.5 text-slate-800 dark:text-[#F2F4F8] focus:outline-none focus:ring-2 focus:ring-brand-orange cursor-pointer"
           >
-            <option value="all" className="bg-white dark:bg-[#12151D]">All Material Categories</option>
+            <option value="all" className="bg-white dark:bg-[#12151D]">All Product Categories</option>
             {MATERIAL_CATEGORIES.map((c) => (
               <option key={c.id} value={c.id} className="bg-white dark:bg-[#12151D]">
                 {c.name}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* Supplier Filter */}
-        <div>
-          <select
-            value={selectedSupplier}
-            onChange={(e) => setSelectedSupplier(e.target.value)}
-            className="w-full text-xs rounded-xl border border-slate-200 dark:border-white/[0.08] bg-slate-50 dark:bg-[#1A1D26] px-3.5 py-2.5 text-slate-800 dark:text-[#F2F4F8] focus:outline-none focus:ring-2 focus:ring-brand-orange cursor-pointer"
-          >
-            <option value="all" className="bg-white dark:bg-[#12151D]">All Suppliers</option>
-            {suppliers.map((s) => (
-              <option key={s.id} value={s.id} className="bg-white dark:bg-[#12151D]">
-                {s.name}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* Storage / Rack Filter */}
-        <div>
-          <select
-            value={selectedStorageWh}
-            onChange={(e) => setSelectedStorageWh(e.target.value)}
-            className="w-full text-xs rounded-xl border border-slate-200 dark:border-white/[0.08] bg-slate-50 dark:bg-[#1A1D26] px-3.5 py-2.5 text-slate-800 dark:text-[#F2F4F8] focus:outline-none focus:ring-2 focus:ring-brand-orange cursor-pointer"
-          >
-            <option value="all" className="bg-white dark:bg-[#12151D]">All Storage Hubs</option>
-            {warehouses.filter((w) => w.id !== 'all').map((w) => (
-              <option key={w.id} value={w.id} className="bg-white dark:bg-[#12151D]">
-                {w.code} - {w.city}
               </option>
             ))}
           </select>
@@ -447,7 +417,6 @@ export const ProductListTableCard: React.FC<ProductListTableCardProps> = ({
                 </th>
               )}
               {visibleColumns.product && <th className="px-4 py-3">Product Name & SKU</th>}
-              {visibleColumns.supplier && <th className="px-4 py-3">Supplier</th>}
               {visibleColumns.category && <th className="px-4 py-3">Category</th>}
               {visibleColumns.cost && <th className="px-4 py-3 text-right">Cost (₹)</th>}
               {visibleColumns.onHand && <th className="px-4 py-3 text-right">On Hand</th>}
@@ -464,14 +433,14 @@ export const ProductListTableCard: React.FC<ProductListTableCardProps> = ({
             {isLoading ? (
               Array.from({ length: 6 }).map((_, i) => (
                 <tr key={i}>
-                  <td colSpan={10} className="px-4 py-4">
+                  <td colSpan={9} className="px-4 py-4">
                     <div className="h-4 bg-slate-200 dark:bg-white/[0.05] rounded-xl animate-pulse" />
                   </td>
                 </tr>
               ))
             ) : totalCount === 0 ? (
               <tr>
-                <td colSpan={10} className="px-4 py-16 text-center">
+                <td colSpan={9} className="px-4 py-16 text-center">
                   <div className="max-w-md mx-auto flex flex-col items-center justify-center">
                     <div className="w-14 h-14 rounded-2xl bg-brand-orange/10 text-brand-orange flex items-center justify-center mb-3">
                       <Box className="w-7 h-7" strokeWidth={1.5} />
@@ -494,7 +463,7 @@ export const ProductListTableCard: React.FC<ProductListTableCardProps> = ({
               </tr>
             ) : items.length === 0 ? (
               <tr>
-                <td colSpan={10} className="px-4 py-10 text-center text-slate-400">
+                <td colSpan={9} className="px-4 py-10 text-center text-slate-400">
                   No items match the selected filter criteria.
                 </td>
               </tr>
@@ -556,15 +525,6 @@ export const ProductListTableCard: React.FC<ProductListTableCardProps> = ({
                             </span>
                           </div>
                         </div>
-                      </td>
-                    )}
-
-                    {/* Supplier */}
-                    {visibleColumns.supplier && (
-                      <td className="px-4 py-3 whitespace-nowrap text-slate-600 dark:text-[#9AA0AE]">
-                        <span className="truncate max-w-[140px] block" title={item.supplierName}>
-                          {item.supplierName}
-                        </span>
                       </td>
                     )}
 
@@ -672,14 +632,11 @@ export const ProductListTableCard: React.FC<ProductListTableCardProps> = ({
                             <Eye className="w-4 h-4" strokeWidth={1.5} />
                           </button>
 
-                          {/* Edit / Quick Adjust */}
+                          {/* Edit Product Information & Image */}
                           <button
-                            onClick={() => {
-                              setAdjustmentItem(item);
-                              setAdjustmentMode('direct');
-                            }}
+                            onClick={() => setSelectedItemForEdit(item)}
                             className="p-1.5 rounded-lg text-slate-500 hover:text-brand-orange hover:bg-white/10 transition-colors"
-                            title="Quick Stock Adjustment & Calibration"
+                            title="Edit Product Information & Image"
                           >
                             <Edit className="w-4 h-4" strokeWidth={1.5} />
                           </button>
@@ -691,6 +648,15 @@ export const ProductListTableCard: React.FC<ProductListTableCardProps> = ({
                             title="Create Purchase Reorder"
                           >
                             <ShoppingCart className="w-4 h-4" strokeWidth={1.5} />
+                          </button>
+
+                          {/* Delete Action */}
+                          <button
+                            onClick={() => setItemToDelete(item)}
+                            className="p-1.5 rounded-lg text-slate-500 hover:text-red-500 hover:bg-red-500/10 transition-colors"
+                            title="Delete product from catalogue"
+                          >
+                            <Trash2 className="w-4 h-4" strokeWidth={1.5} />
                           </button>
                         </div>
                       </td>
@@ -761,6 +727,60 @@ export const ProductListTableCard: React.FC<ProductListTableCardProps> = ({
         onClose={() => setAdjustmentItem(null)}
         onSuccess={loadData}
       />
+
+      {selectedItemForEdit && (
+        <EditItemModal
+          item={selectedItemForEdit}
+          isOpen={!!selectedItemForEdit}
+          onClose={() => setSelectedItemForEdit(null)}
+          onItemUpdated={() => {
+            setSelectedItemForEdit(null);
+            loadData();
+          }}
+          onItemDeleted={() => {
+            setSelectedItemForEdit(null);
+            loadData();
+          }}
+        />
+      )}
+
+      {/* Delete Item Confirmation Modal */}
+      {itemToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#05060A]/80 backdrop-blur-md animate-fade-in">
+          <div className="w-full max-w-md template-card border border-red-500/30 rounded-[24px] shadow-2xl p-6 space-y-4">
+            <div className="flex items-center gap-3 text-red-500">
+              <div className="p-3 rounded-xl bg-red-500/10">
+                <Trash2 className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-slate-900 dark:text-white">Delete Product</h3>
+                <p className="text-xs text-slate-500 dark:text-[#9AA0AE]">This action cannot be undone</p>
+              </div>
+            </div>
+            <p className="text-sm text-slate-700 dark:text-slate-300">
+              Are you sure you want to permanently delete <strong>{itemToDelete.name}</strong> ({itemToDelete.sku}) from your inventory?
+            </p>
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-200 dark:border-white/10">
+              <button
+                type="button"
+                onClick={() => setItemToDelete(null)}
+                disabled={isDeleting}
+                className="px-4 py-2 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/10 rounded-xl"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteConfirmed}
+                disabled={isDeleting}
+                className="px-4 py-2 text-xs font-bold text-white bg-red-600 hover:bg-red-700 rounded-xl shadow-sm flex items-center gap-1.5"
+              >
+                {isDeleting ? 'Deleting...' : 'Yes, Delete Product'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </Card>
   );
 };

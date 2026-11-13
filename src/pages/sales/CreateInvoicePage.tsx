@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useSearchParams, useNavigate, Link } from 'react-router-dom';
+import { ProductImage } from '../../components/common/ProductImage';
 import {
   FileText,
   User,
@@ -856,9 +857,10 @@ export const CreateInvoicePage: React.FC = () => {
                       className="p-3 hover:bg-slate-50 dark:hover:bg-slate-800/60 cursor-pointer transition flex items-center justify-between text-xs"
                     >
                       <div className="flex items-center gap-3">
-                        <img
-                          src={prod.images[0]}
+                        <ProductImage
+                          src={prod.images?.[0]}
                           alt={prod.name}
+                          category={prod.materialCategory}
                           className="w-9 h-9 rounded-lg object-cover bg-slate-100 flex-shrink-0"
                         />
                         <div>

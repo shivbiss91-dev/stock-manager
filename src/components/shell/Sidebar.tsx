@@ -2,11 +2,8 @@ import React, { useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
-  Layers,
   Package,
-  ShieldAlert,
   UserCog,
-  Settings,
   ChevronLeft,
   ChevronRight,
   ChevronDown,
@@ -16,7 +13,7 @@ import { Logo } from '../common/Logo';
 import { UserMenu } from './UserMenu';
 import { useUIStore } from '../../store/uiStore';
 import { useAuthStore } from '../../store/authStore';
-import { Role } from '../../types/auth';
+import { Role, AppPermissionModule } from '../../types/auth';
 import { useTranslation } from 'react-i18next';
 
 interface NavItem {
@@ -25,6 +22,7 @@ interface NavItem {
   path: string;
   icon: React.ReactNode;
   allowedRoles?: Role[];
+  moduleId?: AppPermissionModule;
   badge?: string | number;
   badgeColor?: string;
   subItems?: { label: string; path: string }[];
@@ -34,7 +32,7 @@ export const Sidebar: React.FC = () => {
   const { t } = useTranslation();
   const location = useLocation();
   const { sidebarCollapsed, toggleSidebar, mobileSidebarOpen, setMobileSidebarOpen } = useUIStore();
-  const { user } = useAuthStore();
+  const { user, hasModulePermission } = useAuthStore();
   const [openSubmenus, setOpenSubmenus] = useState<Record<string, boolean>>({});
 
   const toggleSubmenu = (key: string) => {
@@ -46,27 +44,15 @@ export const Sidebar: React.FC = () => {
       id: 'dashboard',
       label: t('nav.dashboard', 'Dashboard'),
       path: '/dashboard',
+      moduleId: 'module_dashboard',
       icon: <LayoutDashboard className="w-5 h-5" strokeWidth={1.5} />,
-    },
-    {
-      id: 'materials',
-      label: t('nav.materials', 'Materials'),
-      path: '/materials',
-      icon: <Layers className="w-5 h-5" strokeWidth={1.5} />,
     },
     {
       id: 'items',
       label: t('nav.items', 'Items'),
       path: '/items',
+      moduleId: 'module_items',
       icon: <Package className="w-5 h-5" strokeWidth={1.5} />,
-      badge: '3.4k',
-    },
-    {
-      id: 'audit-log',
-      label: t('nav.audit_log', 'Audit Log'),
-      path: '/audit-log',
-      icon: <ShieldAlert className="w-5 h-5" strokeWidth={1.5} />,
-      allowedRoles: ['admin'],
     },
     {
       id: 'users-roles',
@@ -78,9 +64,15 @@ export const Sidebar: React.FC = () => {
   ];
 
   const currentRole = user?.role || 'viewer';
-  const visibleNavItems = navItems.filter(
-    (item) => !item.allowedRoles || item.allowedRoles.includes(currentRole)
-  );
+  const visibleNavItems = navItems.filter((item) => {
+    if (item.allowedRoles && !item.allowedRoles.includes(currentRole)) {
+      return false;
+    }
+    if (item.moduleId && !hasModulePermission(item.moduleId)) {
+      return false;
+    }
+    return true;
+  });
 
   const renderContent = (isMobile = false) => {
     const isCollapsed = !isMobile && sidebarCollapsed;
@@ -170,8 +162,8 @@ export const Sidebar: React.FC = () => {
                             onClick={() => isMobile && setMobileSidebarOpen(false)}
                             className={`block px-2.5 py-1.5 text-xs rounded-lg transition-colors ${
                               isCurrent
-                                ? 'font-bold text-brand-orange bg-brand-orange/10'
-                                : 'text-slate-500 dark:text-[#9AA0AE] hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-white/[0.04]'
+                                ? 'text-brand-orange font-bold bg-brand-orange/10'
+                                : 'text-slate-500 dark:text-[#9AA0AE] hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/[0.05]'
                             }`}
                           >
                             {sub.label}
@@ -189,8 +181,8 @@ export const Sidebar: React.FC = () => {
                 key={item.id}
                 to={item.path}
                 onClick={() => isMobile && setMobileSidebarOpen(false)}
-                className={({ isActive: exactActive }) => {
-                  const active = exactActive || isActive;
+                className={({ isActive: isLinkActive }) => {
+                  const active = isLinkActive || isSubActive;
                   return `flex items-center ${
                     isCollapsed ? 'justify-center w-11 h-11 mx-auto' : 'justify-between px-3 py-2.5'
                   } rounded-xl text-xs font-semibold transition-all group ${
@@ -220,29 +212,10 @@ export const Sidebar: React.FC = () => {
           })}
         </div>
 
-        {/* Rail Bottom: Settings Cog + User Avatar Tile */}
+        {/* Rail Bottom: User Avatar Tile */}
         <div className={`p-3 border-t border-slate-200/80 dark:border-white/[0.06] flex-shrink-0 space-y-2 ${isCollapsed ? 'flex flex-col items-center' : ''}`}>
-          {/* Settings Nav Item */}
-          <NavLink
-            to="/settings"
-            onClick={() => isMobile && setMobileSidebarOpen(false)}
-            className={({ isActive }) =>
-              `flex items-center ${
-                isCollapsed ? 'justify-center w-11 h-11' : 'gap-3 px-3 py-2'
-              } rounded-xl text-xs font-semibold transition-all ${
-                isActive
-                  ? 'bg-brand-orange/15 text-brand-orange border border-brand-orange/40'
-                  : 'text-slate-500 dark:text-[#9AA0AE] hover:bg-slate-100 dark:hover:bg-white/[0.05] hover:text-slate-900 dark:hover:text-white'
-              }`
-            }
-            title={isCollapsed ? 'Settings' : undefined}
-          >
-            <Settings className="w-5 h-5" strokeWidth={1.5} />
-            {!isCollapsed && <span>Settings</span>}
-          </NavLink>
-
           {/* User Avatar tile & Profile Menu */}
-          <UserMenu collapsed={isCollapsed} />
+          <UserMenu collapsed={isCollapsed} placement="sidebar" />
         </div>
       </div>
     );

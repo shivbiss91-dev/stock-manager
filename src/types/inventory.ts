@@ -3,6 +3,12 @@ import { PredefinedUnit, PackagingConversions } from '../utils/unitConversions';
 
 export type { PredefinedUnit, PackagingConversions };
 
+export type ProductCategory =
+  | 'card_holder'
+  | 'lanyard'
+  | 'hook'
+  | 'button_bag';
+
 export type MaterialCategory =
   | 'card_holder'
   | 'lanyards'
