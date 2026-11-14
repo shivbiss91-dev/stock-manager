@@ -45,7 +45,6 @@ export const UsersPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | UserStatus>('all');
   const [roleFilter, setRoleFilter] = useState<'all' | Role>('all');
-  const [activeTab, setActiveTab] = useState<'users' | 'matrix'>('users');
 
   // Modals state
   const [editingRoleUser, setEditingRoleUser] = useState<User | null>(null);
@@ -477,33 +476,7 @@ export const UsersPage: React.FC = () => {
         )}
       </div>
 
-      {/* Main Tabs (Staff Directory vs Role Matrix) */}
-      <div className="flex items-center gap-2 border-b border-slate-200 dark:border-white/[0.06] pb-2">
-        <button
-          onClick={() => setActiveTab('users')}
-          className={`px-4 py-2 text-xs font-bold rounded-xl transition ${
-            activeTab === 'users'
-              ? 'bg-accent-orange text-white shadow-sm'
-              : 'template-input text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white border border-slate-200 dark:border-white/[0.06]'
-          }`}
-        >
-          Staff Directory ({users.length})
-        </button>
-        <button
-          onClick={() => setActiveTab('matrix')}
-          className={`px-4 py-2 text-xs font-bold rounded-xl transition ${
-            activeTab === 'matrix'
-              ? 'bg-accent-orange text-white shadow-sm'
-              : 'template-input text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white border border-slate-200 dark:border-white/[0.06]'
-          }`}
-        >
-          Role Permissions Matrix
-        </button>
-      </div>
-
-      {activeTab === 'users' ? (
-        <>
-          {/* Filters Bar: Status Tabs, Role Select, and Search */}
+      {/* Filters Bar: Status Tabs, Role Select, and Search */}
           <div className="space-y-3">
             {/* Status Pills */}
             <div className="flex flex-wrap items-center gap-2">
@@ -802,135 +775,6 @@ export const UsersPage: React.FC = () => {
               </table>
             </div>
           </div>
-        </>
-      ) : (
-        /* Role Permissions Matrix */
-        <div className="template-card border border-slate-200 dark:border-white/[0.06] rounded-[20px] p-6 shadow-soft space-y-6">
-          <div>
-            <h2 className="text-base font-bold text-slate-900 dark:text-white">
-              Access Control & Role Privilege Matrix
-            </h2>
-            <p className="text-xs text-slate-400 mt-1">
-              StockVista enforces strict RBAC (Role-Based Access Control) across operational and financial modules. Individual staff accounts can also be customized with specific module overrides.
-            </p>
-          </div>
-
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs border border-slate-200 dark:border-white/[0.06] rounded-xl overflow-hidden">
-              <thead className="bg-slate-50 dark:bg-white/[0.02] border-b border-slate-200 dark:border-white/[0.06] text-slate-700 dark:text-slate-300 font-bold">
-                <tr>
-                  <th className="p-3.5">Platform Module / Function</th>
-                  <th className="p-3.5 text-center">Admin / Owner</th>
-                  <th className="p-3.5 text-center">Operations Manager</th>
-                  <th className="p-3.5 text-center">Billing Staff</th>
-                  <th className="p-3.5 text-center">Auditor / Viewer</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-white/[0.06]">
-                {[
-                  {
-                    module: 'Dashboard & KPI Metrics',
-                    admin: true,
-                    manager: true,
-                    staff: true,
-                    viewer: true,
-                  },
-                  {
-                    module: 'Items & Products Catalog',
-                    admin: true,
-                    manager: true,
-                    staff: true,
-                    viewer: true,
-                  },
-                  {
-                    module: 'Stock Management & Adjustments',
-                    admin: true,
-                    manager: true,
-                    staff: true,
-                    viewer: false,
-                  },
-                  {
-                    module: 'Warehouse & Facility Management',
-                    admin: true,
-                    manager: true,
-                    staff: false,
-                    viewer: false,
-                  },
-                  {
-                    module: 'Inter-Hub Stock Transfers',
-                    admin: true,
-                    manager: true,
-                    staff: false,
-                    viewer: false,
-                  },
-                  {
-                    module: 'Sales Orders, Quotations & Returns',
-                    admin: true,
-                    manager: true,
-                    staff: true,
-                    viewer: false,
-                  },
-                  {
-                    module: 'GST Tax Invoices & Supplier Bills',
-                    admin: true,
-                    manager: true,
-                    staff: true,
-                    viewer: false,
-                  },
-                  {
-                    module: 'Financial Statements & Reports',
-                    admin: true,
-                    manager: true,
-                    staff: false,
-                    viewer: true,
-                  },
-                  {
-                    module: 'Settings & Administration',
-                    admin: true,
-                    manager: false,
-                    staff: false,
-                    viewer: false,
-                  },
-                ].map((row, idx) => (
-                  <tr key={idx} className="hover:bg-slate-50/50 dark:hover:bg-white/[0.02]">
-                    <td className="p-3.5 font-medium text-slate-800 dark:text-slate-200">
-                      {row.module}
-                    </td>
-                    <td className="p-3.5 text-center">
-                      {row.admin ? (
-                        <Check className="w-4 h-4 text-emerald-500 mx-auto" />
-                      ) : (
-                        <X className="w-4 h-4 text-slate-400 dark:text-slate-600 mx-auto" />
-                      )}
-                    </td>
-                    <td className="p-3.5 text-center">
-                      {row.manager ? (
-                        <Check className="w-4 h-4 text-emerald-500 mx-auto" />
-                      ) : (
-                        <X className="w-4 h-4 text-slate-400 dark:text-slate-600 mx-auto" />
-                      )}
-                    </td>
-                    <td className="p-3.5 text-center">
-                      {row.staff ? (
-                        <Check className="w-4 h-4 text-emerald-500 mx-auto" />
-                      ) : (
-                        <X className="w-4 h-4 text-slate-400 dark:text-slate-600 mx-auto" />
-                      )}
-                    </td>
-                    <td className="p-3.5 text-center">
-                      {row.viewer ? (
-                        <Check className="w-4 h-4 text-emerald-500 mx-auto" />
-                      ) : (
-                        <X className="w-4 h-4 text-slate-400 dark:text-slate-600 mx-auto" />
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
 
       {/* ============================================================ */}
       {/* MODAL 1: STAFF PERMISSIONS MANAGEMENT MODAL                  */}
