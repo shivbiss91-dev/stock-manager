@@ -17,6 +17,7 @@
     "autoprefixer": "^10.4.20",
     "clsx": "^2.1.1",
     "date-fns": "^3.6.0",
+    "firebase": "^13.3.0",
     "framer-motion": "^11.11.17",
     "i18next": "^23.16.8",
     "lucide-react": "^0.460.0",
@@ -42,6 +43,8 @@
   },
   "allowScripts": {
     "esbuild": true,
-    "esbuild@0.21.5": true
+    "esbuild@0.21.5": true,
+    "@firebase/util@1.15.3": true,
+    "protobufjs@7.6.6": true
   }
 }
