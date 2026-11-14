@@ -34,6 +34,12 @@ export default defineConfig({
   server: {
     port: 5173,
     host: true,
+    watch: {
+      ignored: ['**/docs/**', '**/dist/**'],
+    },
+  },
+  optimizeDeps: {
+    entries: ['index.html', 'src/**/*.{ts,tsx}'],
   },
   build: {
     chunkSizeWarningLimit: 2000,
