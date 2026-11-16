@@ -1,16 +1,11 @@
 import React, { useState } from 'react';
 import { DashboardCalendarCard } from '../../components/dashboard/DashboardCalendarCard';
-import { ProductListTableCard } from '../../components/dashboard/ProductListTableCard';
-import { StockStatus } from '../../types/common';
-import { useUIStore } from '../../store/uiStore';
 import { Button } from '../../components/common/Button';
 import { Badge } from '../../components/common/Badge';
 import { FilePlus, RefreshCw } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export const DashboardPage: React.FC = () => {
-  const { selectedWarehouseId } = useUIStore();
-  const [tableStatusFilter, setTableStatusFilter] = useState<StockStatus | 'all'>('all');
   const [refreshKey, setRefreshKey] = useState(0);
 
   const handleRefresh = () => {
@@ -34,7 +29,7 @@ export const DashboardPage: React.FC = () => {
             Dashboard Overview
           </h1>
           <p className="text-xs text-slate-500 dark:text-[#9AA0AE] mt-0.5">
-            Operational milestones, automated inventory thresholds, and catalog management
+            Operational milestones, automated inventory thresholds, and calendar tracking
           </p>
         </div>
 
@@ -64,14 +59,6 @@ export const DashboardPage: React.FC = () => {
 
       {/* Main Operations Calendar */}
       <DashboardCalendarCard key={`cal-${refreshKey}`} />
-
-      {/* Product List Master Table */}
-      <ProductListTableCard
-        key={`prod-${refreshKey}`}
-        warehouseId={selectedWarehouseId}
-        statusFilter={tableStatusFilter}
-        onStatusFilterChange={setTableStatusFilter}
-      />
     </div>
   );
 };
