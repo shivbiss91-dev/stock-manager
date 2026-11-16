@@ -95,4 +95,39 @@ describe('Calendar Stock & Product Change Tracking with Exact Date & Time', () =
       expect(ev.time).toBeDefined();
     });
   });
+
+  it('records stock adjustment on user-specified date and displays it on that exact calendar date', async () => {
+    const items = await inventoryService.getAllItems();
+    const buttonBag = items.find((i) => i.name === 'Button Bag') || items[0];
+    expect(buttonBag).toBeDefined();
+
+    const targetDate = '2026-11-25';
+
+    await inventoryService.updateStock(
+      buttonBag.id,
+      {
+        adjustmentQuantity: 20,
+        mode: 'add',
+        reason: 'Stock Addition (Inward)',
+        referenceNumber: 'ADJ-DATED-001',
+        userName: 'Stock Auditor',
+        date: targetDate,
+      }
+    );
+
+    const events = await calendarService.getEvents();
+    const datedEvent = events.find(
+      (e) => e.linkedRecordId === buttonBag.id && e.date === targetDate
+    );
+
+    expect(datedEvent).toBeDefined();
+    expect(datedEvent?.date).toBe(targetDate);
+    expect(datedEvent?.type).toBe('stock_change');
+    expect(datedEvent?.title).toContain('+20');
+    expect(datedEvent?.description).toContain('Stock Addition (Inward)');
+
+    // Verify getEventsForDate filters it correctly
+    const dayEvents = await calendarService.getEventsForDate(targetDate);
+    expect(dayEvents.some((ev) => ev.linkedRecordId === buttonBag.id)).toBe(true);
+  });
 });

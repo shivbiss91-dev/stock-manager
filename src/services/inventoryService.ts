@@ -21,11 +21,12 @@ export interface StockAdjustmentInput {
   delta?: number;
   targetStock?: number;
   unit?: string;
-  reason: string;
+  reason?: string;
   notes?: string;
   userName?: string;
   userRole?: string;
   referenceNumber?: string;
+  date?: string;
 }
 
 function getStoredItems(): InventoryItem[] {
@@ -294,11 +295,26 @@ export const inventoryService = {
     item.updatedAt = new Date().toISOString();
     saveStoredItems(itemsDatabase);
 
+    // Compute adjustment date
+    let adjustmentDateIso = new Date().toISOString();
+    if (typeof deltaOrOptions !== 'number' && deltaOrOptions.date) {
+      const d = deltaOrOptions.date;
+      if (d.includes('T')) {
+        adjustmentDateIso = d;
+      } else {
+        const now = new Date();
+        const hours = String(now.getHours()).padStart(2, '0');
+        const mins = String(now.getMinutes()).padStart(2, '0');
+        const secs = String(now.getSeconds()).padStart(2, '0');
+        adjustmentDateIso = `${d}T${hours}:${mins}:${secs}`;
+      }
+    }
+
     // Record every adjustment in the stock movement ledger
     try {
       await stockMovementService.addMovement({
         itemId: item.id,
-        date: new Date().toISOString(),
+        date: adjustmentDateIso,
         type: 'adjustment',
         stockBefore: previousStock,
         quantityDelta: delta,
@@ -313,6 +329,10 @@ export const inventoryService = {
       });
     } catch (err) {
       console.warn('Failed to record stock movement ledger entry:', err);
+    }
+
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('stock_updated', { detail: { itemId: item.id, date: adjustmentDateIso } }));
     }
 
     // Record in audit log

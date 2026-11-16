@@ -48,7 +48,7 @@ export const Modal: React.FC<ModalProps> = ({
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
+        <div className="fixed inset-0 z-50 overflow-y-auto p-3 sm:p-6 flex items-start sm:items-center justify-center">
           {/* Backdrop */}
           <motion.div
             initial={{ opacity: 0 }}
@@ -68,11 +68,11 @@ export const Modal: React.FC<ModalProps> = ({
             transition={{ duration: 0.2, ease: 'easeOut' }}
             role="dialog"
             aria-modal="true"
-            className={`relative w-full ${sizeClasses[size]} rounded-2xl bg-white dark:bg-[#12151D] border border-slate-200 dark:border-white/[0.08] shadow-2xl overflow-hidden z-10 my-8`}
+            className={`relative w-full ${sizeClasses[size]} rounded-2xl bg-white dark:bg-[#12151D] border border-slate-200 dark:border-white/[0.08] shadow-2xl overflow-hidden z-10 my-auto max-h-[calc(100dvh-2rem)] sm:max-h-[calc(100dvh-3.5rem)] flex flex-col`}
           >
             {/* Header */}
             {(title || showCloseButton) && (
-              <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-white/[0.06]">
+              <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-white/[0.06] shrink-0">
                 <div>
                   {title && (
                     <h2 className="text-lg font-bold text-slate-900 dark:text-[#F2F4F8] tracking-tight">
@@ -98,7 +98,7 @@ export const Modal: React.FC<ModalProps> = ({
             )}
 
             {/* Content */}
-            <div className="p-6 text-slate-800 dark:text-[#F2F4F8]">{children}</div>
+            <div className="p-6 text-slate-800 dark:text-[#F2F4F8] overflow-y-auto flex-1">{children}</div>
           </motion.div>
         </div>
       )}

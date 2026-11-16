@@ -322,34 +322,6 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({ isOpen, onClose, onI
             onChange={(e) => setCurrentStock(Math.max(0, parseInt(e.target.value) || 0))}
             helperText="Defaults to 0 for starter catalog items."
           />
-
-          <Input
-            label="Min Stock Threshold (Reorder Level)"
-            type="number"
-            min={0}
-            value={reorderLevel}
-            onChange={(e) => setReorderLevel(Math.max(0, parseInt(e.target.value) || 0))}
-          />
-
-          <Input
-            label="Purchase / Cost Price (₹ excl. GST) *"
-            type="number"
-            step="0.01"
-            min={0}
-            value={costPrice}
-            onChange={(e) => setCostPrice(Math.max(0, parseFloat(e.target.value) || 0))}
-            placeholder="0.00"
-          />
-
-          <Input
-            label="Selling Rate (₹ excl. GST) *"
-            type="number"
-            step="0.01"
-            min={0}
-            value={sellingPrice}
-            onChange={(e) => setSellingPrice(Math.max(0, parseFloat(e.target.value) || 0))}
-            placeholder="0.00"
-          />
         </div>
 
         {/* Product-Specific Packaging Conversions by Category */}

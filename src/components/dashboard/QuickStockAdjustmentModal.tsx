@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Modal } from '../common/Modal';
 import { Button } from '../common/Button';
 import { Input } from '../common/Input';
-import { Select } from '../common/Select';
 import { ProductImage } from '../common/ProductImage';
 import { ComputedInventoryItem } from '../../types/inventory';
 import { inventoryService } from '../../services/inventoryService';
@@ -24,6 +23,7 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   Edit3,
+  Calendar as CalendarIcon,
 } from 'lucide-react';
 
 interface QuickStockAdjustmentModalProps {
@@ -45,11 +45,16 @@ export const QuickStockAdjustmentModal: React.FC<QuickStockAdjustmentModalProps>
   const isViewer = user?.role === 'viewer';
 
   const [adjustmentType, setAdjustmentType] = useState<'add' | 'deduct' | 'direct'>(initialMode);
+  const [adjustmentDate, setAdjustmentDate] = useState<string>(() => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  });
   const [selectedUnit, setSelectedUnit] = useState<PredefinedUnit>('PCS');
   const [quantity, setQuantity] = useState<number>(10);
   const [directTargetStock, setDirectTargetStock] = useState<number>(0);
-  const [reason, setReason] = useState<string>('Stock Receipt (GRN)');
-  const [customReason, setCustomReason] = useState<string>('');
   const [notes, setNotes] = useState<string>('');
   const [isConfirmed, setIsConfirmed] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -63,30 +68,16 @@ export const QuickStockAdjustmentModal: React.FC<QuickStockAdjustmentModalProps>
       setSelectedUnit(itemUnit);
       setQuantity(10);
       setDirectTargetStock(item.currentStock);
-      setReason(
-        initialMode === 'add'
-          ? 'Stock Receipt (GRN)'
-          : initialMode === 'deduct'
-          ? 'Damaged / Broken in Warehouse'
-          : 'Annual Physical Inventory Audit'
-      );
-      setCustomReason('');
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const day = String(now.getDate()).padStart(2, '0');
+      setAdjustmentDate(`${year}-${month}-${day}`);
       setNotes('');
       setIsConfirmed(false);
       setError(null);
     }
   }, [item, isOpen, initialMode]);
-
-  // Update default reason when adjustmentType changes
-  useEffect(() => {
-    if (adjustmentType === 'add') {
-      setReason('Stock Receipt (GRN)');
-    } else if (adjustmentType === 'deduct') {
-      setReason('Damaged / Broken in Warehouse');
-    } else {
-      setReason('Annual Physical Inventory Audit');
-    }
-  }, [adjustmentType]);
 
   if (!item) return null;
 
@@ -112,7 +103,12 @@ export const QuickStockAdjustmentModal: React.FC<QuickStockAdjustmentModalProps>
     adjustmentType !== 'direct' && quantity <= 0;
   const isDirectNegative = adjustmentType === 'direct' && directTargetStock < 0;
 
-  const finalReason = reason === 'Other' ? (customReason.trim() || 'Manual stock calibration') : reason;
+  const finalReason =
+    adjustmentType === 'add'
+      ? 'Stock Addition (Inward)'
+      : adjustmentType === 'deduct'
+      ? 'Stock Deduction (Outward)'
+      : 'Stock Calibration';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -156,6 +152,7 @@ export const QuickStockAdjustmentModal: React.FC<QuickStockAdjustmentModalProps>
         unit: selectedUnit,
         reason: finalReason,
         notes: notes.trim(),
+        date: adjustmentDate,
         userName: user?.name || 'Authorized Staff',
         userRole: user?.role || 'Staff',
       });
@@ -266,6 +263,24 @@ export const QuickStockAdjustmentModal: React.FC<QuickStockAdjustmentModalProps>
           </div>
         </div>
 
+        {/* Adjustment Date Section (Linked directly to Dashboard Calendar) */}
+        <div>
+          <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-1.5">
+            <CalendarIcon className="w-3.5 h-3.5 text-accent-orange" />
+            <span>Adjustment Date *</span>
+          </label>
+          <input
+            type="date"
+            value={adjustmentDate}
+            onChange={(e) => setAdjustmentDate(e.target.value)}
+            className="w-full text-xs rounded-xl border border-slate-200 dark:border-white/[0.08] bg-slate-50 dark:bg-[#1A1D26] px-3.5 py-2.5 text-slate-800 dark:text-[#F2F4F8] focus:outline-none focus:ring-2 focus:ring-accent-orange cursor-pointer"
+            required
+          />
+          <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+            Whatever stock change you make will be recorded and shown in the Calendar on this date.
+          </p>
+        </div>
+
         {/* Quantity & Unit of Measurement Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
           {adjustmentType === 'direct' ? (
@@ -330,55 +345,9 @@ export const QuickStockAdjustmentModal: React.FC<QuickStockAdjustmentModalProps>
           </div>
         )}
 
-        {/* Adjustment Reason Select */}
-        <div>
-          <Select
-            label="Mandatory Adjustment Reason *"
-            value={reason}
-            onChange={(e) => setReason(e.target.value)}
-            options={
-              adjustmentType === 'add'
-                ? [
-                    { value: 'Stock Receipt (GRN)', label: 'Stock Receipt (GRN)' },
-                    { value: 'Customer Return', label: 'Customer Return' },
-                    { value: 'Audit Cycle Count (+)', label: 'Audit Cycle Count (+)' },
-                    { value: 'Production Inward', label: 'Production Inward' },
-                    { value: 'Packaging Unpack', label: 'Packaging Unpack' },
-                    { value: 'Other', label: 'Other (Enter custom reason)' },
-                  ]
-                : adjustmentType === 'deduct'
-                ? [
-                    { value: 'Damaged / Broken in Warehouse', label: 'Damaged / Broken in Warehouse' },
-                    { value: 'Discrepancy Write-off (-)', label: 'Discrepancy Write-off (-)' },
-                    { value: 'Sample Demonstration', label: 'Sample Demonstration' },
-                    { value: 'Direct Dispatch Adjustment', label: 'Direct Dispatch Adjustment' },
-                    { value: 'Expired / Quality Rejection', label: 'Expired / Quality Rejection' },
-                    { value: 'Other', label: 'Other (Enter custom reason)' },
-                  ]
-                : [
-                    { value: 'Annual Physical Inventory Audit', label: 'Annual Physical Inventory Audit' },
-                    { value: 'Cycle Count Reconciliation', label: 'Cycle Count Reconciliation' },
-                    { value: 'Initial System Calibration', label: 'Initial System Calibration' },
-                    { value: 'Other', label: 'Other (Enter custom reason)' },
-                  ]
-            }
-          />
-        </div>
-
-        {/* Custom Reason Field */}
-        {reason === 'Other' && (
-          <Input
-            label="Custom Reason Description *"
-            placeholder="Specify reason for adjustment..."
-            value={customReason}
-            onChange={(e) => setCustomReason(e.target.value)}
-            required
-          />
-        )}
-
         {/* Audit Notes */}
         <Input
-          label="Audit Notes / Verification Reference"
+          label="Audit Notes / Verification Reference (Optional)"
           placeholder="e.g. Physical count sheet #441 signed by Suresh Patil"
           value={notes}
           onChange={(e) => setNotes(e.target.value)}

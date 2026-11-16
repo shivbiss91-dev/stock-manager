@@ -67,6 +67,15 @@ export const DashboardCalendarCard: React.FC = () => {
 
   useEffect(() => {
     loadEvents();
+    const handleUpdate = () => {
+      loadEvents();
+    };
+    window.addEventListener('stock_updated', handleUpdate);
+    window.addEventListener('storage', handleUpdate);
+    return () => {
+      window.removeEventListener('stock_updated', handleUpdate);
+      window.removeEventListener('storage', handleUpdate);
+    };
   }, []);
 
   // Filter events based on active category filter
