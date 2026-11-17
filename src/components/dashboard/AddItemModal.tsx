@@ -5,8 +5,14 @@ import { Input } from '../common/Input';
 import { Select } from '../common/Select';
 import { inventoryService } from '../../services/inventoryService';
 import { MaterialCategory } from '../../types/inventory';
-import { MATERIAL_CATEGORIES } from '../../data/materialCategories';
-import { PackagePlus, Layers, Image as ImageIcon, Upload, Trash2 } from 'lucide-react';
+import {
+  PRODUCT_CATEGORIES,
+  getAllCategories,
+  saveCustomCategory,
+} from '../../data/materialCategories';
+import { MaterialCategoryInfo } from '../../types/inventory';
+import { useAuthStore } from '../../store/authStore';
+import { PackagePlus, Layers, Image as ImageIcon, Upload, Trash2, Plus, X } from 'lucide-react';
 import {
   PREDEFINED_UNITS,
   PredefinedUnit,
@@ -20,6 +26,16 @@ interface AddItemModalProps {
 }
 
 export const AddItemModal: React.FC<AddItemModalProps> = ({ isOpen, onClose, onItemAdded }) => {
+  const { user } = useAuthStore();
+  const isAdmin = user?.role === 'owner' || user?.role === 'admin';
+
+  const [categoriesList, setCategoriesList] = useState<MaterialCategoryInfo[]>(() => getAllCategories());
+  const [showAddCustomCategory, setShowAddCustomCategory] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
+
+  const [subcategory, setSubcategory] = useState('');
+  const [isCustomSubcategory, setIsCustomSubcategory] = useState(false);
+  const [customSubcategoryInput, setCustomSubcategoryInput] = useState('');
   const [name, setName] = useState('');
   const [sku, setSku] = useState('');
   const [category, setCategory] = useState<MaterialCategory>('card_holder');
@@ -50,6 +66,12 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({ isOpen, onClose, onI
     if (isOpen) {
       setName('');
       setCategory('card_holder');
+      setSubcategory('');
+      setIsCustomSubcategory(false);
+      setCustomSubcategoryInput('');
+      setCategoriesList(getAllCategories());
+      setShowAddCustomCategory(false);
+      setNewCategoryName('');
       setCurrentStock(0);
       setUnit('PCS');
       setReorderLevel(0);
@@ -100,7 +122,39 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({ isOpen, onClose, onI
     }
   };
 
-  const generateSku = (cat: MaterialCategory, prodName: string): string => {
+  const handleSaveCustomCategory = () => {
+    if (!isAdmin) {
+      setError('Only Admin has permission to add custom categories.');
+      return;
+    }
+    const trimmed = newCategoryName.trim();
+    if (!trimmed) return;
+    const catId = trimmed.toLowerCase().replace(/[^a-z0-9]/g, '_');
+    const newCat: MaterialCategoryInfo = {
+      id: catId as any,
+      name: trimmed,
+      description: `Custom category: ${trimmed}`,
+      subtypes: [],
+      defaultHsn: '',
+      defaultGstRate: 0,
+      iconName: 'Boxes',
+      imageUrl: '/products/card-holder.svg',
+    };
+    saveCustomCategory(newCat);
+    const updated = getAllCategories();
+    setCategoriesList(updated);
+    setCategory(catId as any);
+    setNewCategoryName('');
+    setShowAddCustomCategory(false);
+  };
+
+  const handleRemoveSubcategory = () => {
+    setSubcategory('');
+    setCustomSubcategoryInput('');
+    setIsCustomSubcategory(false);
+  };
+
+  const generateSku = (cat: string, prodName: string): string => {
     const catPrefixMap: Record<string, string> = {
       card_holder: 'CH',
       lanyard: 'LAN',
@@ -139,11 +193,15 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({ isOpen, onClose, onI
 
       const autoSku = generateSku(category, name.trim());
 
+      const finalSubtype = isCustomSubcategory
+        ? customSubcategoryInput.trim()
+        : subcategory.trim();
+
       await inventoryService.createItem({
         name: name.trim(),
         sku: autoSku,
         materialCategory: category,
-        materialSubtype: 'Standard',
+        materialSubtype: finalSubtype || 'Standard',
         description: `Industrial catalog item: ${name.trim()}.`,
         currentStock: Number(currentStock) || 0,
         unit,
@@ -294,15 +352,125 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({ isOpen, onClose, onI
             required
           />
 
-          <Select
-            label="Product Category *"
-            value={category}
-            onChange={(e) => handleCategoryChange(e.target.value as MaterialCategory)}
-            options={MATERIAL_CATEGORIES.map((c) => ({
-              value: c.id,
-              label: c.name,
-            }))}
-          />
+          {/* Product Category Section with Admin-only Custom Option */}
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                Product Category *
+              </label>
+              {isAdmin && (
+                <button
+                  type="button"
+                  onClick={() => setShowAddCustomCategory(!showAddCustomCategory)}
+                  className="text-[11px] font-semibold text-accent-orange hover:underline flex items-center gap-1"
+                >
+                  <Plus className="w-3 h-3" />
+                  <span>{showAddCustomCategory ? 'Cancel' : 'Custom Category'}</span>
+                </button>
+              )}
+            </div>
+
+            {showAddCustomCategory && isAdmin ? (
+              <div className="flex items-center gap-2 mb-2">
+                <input
+                  type="text"
+                  placeholder="Enter new category..."
+                  value={newCategoryName}
+                  onChange={(e) => setNewCategoryName(e.target.value)}
+                  className="w-full text-xs rounded-xl border border-accent-orange bg-slate-50 dark:bg-[#1A1D26] px-3 py-2 text-slate-800 dark:text-[#F2F4F8] focus:outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={handleSaveCustomCategory}
+                  className="px-3 py-2 bg-accent-orange text-white text-xs font-bold rounded-xl shrink-0"
+                >
+                  Save
+                </button>
+              </div>
+            ) : null}
+
+            <select
+              value={category}
+              onChange={(e) => handleCategoryChange(e.target.value as MaterialCategory)}
+              className="w-full text-xs rounded-xl border border-slate-200 dark:border-white/[0.08] bg-slate-50 dark:bg-[#1A1D26] px-3.5 py-2.5 text-slate-800 dark:text-[#F2F4F8] focus:outline-none focus:ring-2 focus:ring-accent-orange cursor-pointer"
+            >
+              {categoriesList.map((c) => (
+                <option key={c.id} value={c.id} className="bg-white dark:bg-[#12151D]">
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Sub Category Section (With Admin-only Custom option and Remove option) */}
+          <div className="sm:col-span-2 p-3 rounded-xl bg-slate-50/70 dark:bg-white/[0.02] border border-slate-200/80 dark:border-white/[0.06] space-y-2">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                <span>Sub Category (Optional)</span>
+                {isAdmin && (
+                  <span className="text-[10px] bg-accent-orange/20 text-accent-orange px-1.5 py-0.2 rounded font-bold">
+                    Admin
+                  </span>
+                )}
+              </label>
+
+              <div className="flex items-center gap-3">
+                {isAdmin && (
+                  <button
+                    type="button"
+                    onClick={() => setIsCustomSubcategory(!isCustomSubcategory)}
+                    className="text-[11px] font-semibold text-accent-blue hover:underline"
+                  >
+                    {isCustomSubcategory ? 'Choose from list' : '+ Custom Subcategory'}
+                  </button>
+                )}
+
+                {/* Remove Subcategory Option */}
+                {(subcategory || customSubcategoryInput) && (
+                  <button
+                    type="button"
+                    onClick={handleRemoveSubcategory}
+                    className="text-[11px] font-semibold text-rose-500 hover:text-rose-600 hover:underline flex items-center gap-1"
+                    title="Remove subcategory"
+                  >
+                    <X className="w-3 h-3" />
+                    <span>Remove Subcategory</span>
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {isCustomSubcategory ? (
+              <div>
+                <input
+                  type="text"
+                  placeholder={isAdmin ? 'Type your custom subcategory...' : 'Only Admin can define custom subcategories'}
+                  value={customSubcategoryInput}
+                  onChange={(e) => setCustomSubcategoryInput(e.target.value)}
+                  disabled={!isAdmin}
+                  className="w-full text-xs rounded-xl border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-[#1A1D26] px-3.5 py-2.5 text-slate-800 dark:text-[#F2F4F8] focus:outline-none focus:ring-2 focus:ring-accent-orange disabled:opacity-60"
+                />
+                {!isAdmin && (
+                  <p className="text-[11px] text-amber-500 mt-1">
+                    Only administrators have permission to type custom subcategories.
+                  </p>
+                )}
+              </div>
+            ) : (
+              <select
+                value={subcategory}
+                onChange={(e) => setSubcategory(e.target.value)}
+                className="w-full text-xs rounded-xl border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-[#1A1D26] px-3.5 py-2.5 text-slate-800 dark:text-[#F2F4F8] focus:outline-none focus:ring-2 focus:ring-accent-orange cursor-pointer"
+              >
+                <option value="">None / Unassigned Subcategory</option>
+                {(categoriesList.find((c) => c.id === category)?.subtypes || []).map((sub) => (
+                  <option key={sub} value={sub} className="bg-white dark:bg-[#12151D]">
+                    {sub}
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
 
           <Select
             label="Unit of Measurement *"

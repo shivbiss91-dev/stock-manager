@@ -9,7 +9,6 @@ import {
   Package,
   Layers,
   MapPin,
-  Building2,
   Calendar,
   AlertTriangle,
   TrendingUp,
@@ -26,8 +25,6 @@ import {
   Clock,
   ChevronRight,
   Maximize2,
-  Table as TableIcon,
-  BarChart2,
   Lock,
   Plus,
   Minus,
@@ -36,27 +33,14 @@ import {
 } from 'lucide-react';
 import { QuickStockAdjustmentModal } from '../../components/dashboard/QuickStockAdjustmentModal';
 import { formatPackagingBreakdown } from '../../utils/unitConversions';
-import {
-  ResponsiveContainer,
-  ComposedChart,
-  Line,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  Legend,
-  CartesianGrid,
-} from 'recharts';
+// recharts removed
 import { inventoryService } from '../../services/inventoryService';
 import { itemAnalyticsService } from '../../services/itemAnalyticsService';
 import { stockMovementService } from '../../services/stockMovementService';
 import { ComputedInventoryItem } from '../../types/inventory';
 import {
-  SalesAnalyticsSummary,
-  TopCustomerItemStat,
   StockMovementRecord,
   ItemDocument,
-  TimeGranularity,
   MovementType,
 } from '../../types/itemDetail';
 import { useAuthStore } from '../../store/authStore';
@@ -69,7 +53,7 @@ import { TransferStockModal } from '../../components/itemDetail/TransferStockMod
 import { BarcodeLabelModal } from '../../components/itemDetail/BarcodeLabelModal';
 import { useNotificationStore } from '../../store/notificationStore';
 
-type ActiveTab = 'overview' | 'analytics' | 'movements' | 'documents';
+type ActiveTab = 'overview' | 'movements' | 'documents';
 
 export const ItemDetailPage: React.FC = () => {
   const { itemId } = useParams<{ itemId: string }>();
@@ -86,15 +70,9 @@ export const ItemDetailPage: React.FC = () => {
   const [isImageZoomed, setIsImageZoomed] = useState(false);
 
   // Tab state
-  const [activeTab, setActiveTab] = useState<ActiveTab>('analytics');
+  const [activeTab, setActiveTab] = useState<ActiveTab>('overview');
 
-  // Analytics state
-  const [granularity, setGranularity] = useState<TimeGranularity>('monthly');
-  const [analytics, setAnalytics] = useState<SalesAnalyticsSummary | null>(null);
-  const [topCustomers, setTopCustomers] = useState<TopCustomerItemStat[]>([]);
-  const [analyticsViewMode, setAnalyticsViewMode] = useState<'chart' | 'table'>('chart');
-  const [showSalesLine, setShowSalesLine] = useState(true);
-  const [showUnitsLine, setShowUnitsLine] = useState(true);
+
 
   // Movements state
   const [movements, setMovements] = useState<StockMovementRecord[]>([]);
@@ -151,16 +129,12 @@ export const ItemDetailPage: React.FC = () => {
         if (isMounted) {
           setItem(found);
           if (found) {
-            // Load analytics, movements, docs
-            const [analyticsRes, customersRes, movementsRes, docsRes] = await Promise.all([
-              itemAnalyticsService.getSalesAnalytics(found.id, found.sellingPrice, granularity),
-              itemAnalyticsService.getTopCustomers(found.id, found.sellingPrice),
+            // Load movements, docs
+            const [movementsRes, docsRes] = await Promise.all([
               stockMovementService.getMovements({ itemId: found.id }),
               itemAnalyticsService.getItemDocuments(found.id),
             ]);
             if (isMounted) {
-              setAnalytics(analyticsRes);
-              setTopCustomers(customersRes);
               setMovements(movementsRes);
               setDocuments(docsRes);
             }
@@ -179,19 +153,7 @@ export const ItemDetailPage: React.FC = () => {
     };
   }, [itemId]);
 
-  // Reload analytics on granularity switch
-  useEffect(() => {
-    if (!item) return;
-    let isMounted = true;
-    itemAnalyticsService
-      .getSalesAnalytics(item.id, item.sellingPrice, granularity)
-      .then((data) => {
-        if (isMounted) setAnalytics(data);
-      });
-    return () => {
-      isMounted = false;
-    };
-  }, [granularity, item]);
+
 
   // Filtered movements
   const filteredMovements = useMemo(() => {
@@ -326,15 +288,6 @@ export const ItemDetailPage: React.FC = () => {
             <span>Adjust Stock</span>
           </button>
 
-          {/* Transfer Stock */}
-          <button
-            onClick={() => setIsTransferModalOpen(true)}
-            className="px-3.5 py-2 text-xs sm:text-sm font-medium rounded-xl border border-slate-200 dark:border-white/[0.08] template-input text-slate-700 dark:text-slate-200 hover:text-white transition flex items-center gap-1.5"
-          >
-            <ArrowRightLeft className="w-4 h-4 text-accent-blue" />
-            <span>Transfer Stock</span>
-          </button>
-
           {/* Print Label */}
           <button
             onClick={() => setIsLabelModalOpen(true)}
@@ -342,15 +295,6 @@ export const ItemDetailPage: React.FC = () => {
           >
             <Printer className="w-4 h-4 text-slate-400" />
             <span>Print Label</span>
-          </button>
-
-          {/* Generate Bill / Invoice */}
-          <button
-            onClick={() => navigate(`/sales/invoices/new?itemId=${item.id}`)}
-            className="px-4 py-2 text-xs sm:text-sm font-semibold rounded-xl bg-accent-orange hover:bg-accent-orange/90 text-white shadow-sm transition flex items-center gap-1.5"
-          >
-            <Receipt className="w-4 h-4" />
-            <span>Generate Bill</span>
           </button>
 
           {/* Delete Item button */}
@@ -588,50 +532,13 @@ export const ItemDetailPage: React.FC = () => {
               )}
             </div>
           </div>
-
-          {/* Location & Supply Details */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-            <div className="flex items-start gap-2.5 p-3 rounded-xl bg-slate-50/80 dark:bg-white/[0.02] border border-slate-100 dark:border-white/[0.06]">
-              <MapPin className="w-4 h-4 text-accent-orange mt-0.5 flex-shrink-0" />
-              <div>
-                <p className="font-semibold text-slate-800 dark:text-slate-200">Storage Location</p>
-                <p className="text-slate-600 dark:text-slate-400 mt-0.5">
-                  {item.warehouseName && item.warehouseName !== 'Unassigned' ? item.warehouseName : 'Unassigned (Configure in Edit)'}
-                </p>
-                <p className="text-[11px] font-mono text-slate-400">{item.rackLocation || 'Rack not assigned'}</p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-2.5 p-3 rounded-xl bg-slate-50/80 dark:bg-white/[0.02] border border-slate-100 dark:border-white/[0.06]">
-              <Building2 className="w-4 h-4 text-accent-blue mt-0.5 flex-shrink-0" />
-              <div>
-                <p className="font-semibold text-slate-800 dark:text-slate-200">Wholesale Supplier</p>
-                <p className="text-slate-600 dark:text-slate-400 mt-0.5">
-                  {item.supplierName && item.supplierName !== 'Unassigned' ? item.supplierName : 'Unassigned'}
-                </p>
-                <p className="text-[11px] text-slate-400">{item.supplierId ? `ID: ${item.supplierId}` : 'No supplier linked'}</p>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
 
-      {/* 3. Tabbed Sections (Analytics, Overview, Movements, Documents) */}
+      {/* 3. Tabbed Sections (Overview, Movements, Documents) */}
       <div className="template-card border border-slate-200 dark:border-white/[0.06] rounded-[20px] shadow-soft overflow-hidden">
         {/* Navigation Tabs */}
         <div className="flex items-center gap-2 px-4 sm:px-6 border-b border-slate-200 dark:border-white/[0.06] overflow-x-auto">
-          <button
-            onClick={() => setActiveTab('analytics')}
-            className={`py-3.5 px-3 text-xs sm:text-sm font-semibold border-b-2 flex items-center gap-2 transition-all ${
-              activeTab === 'analytics'
-                ? 'border-accent-orange text-accent-orange font-bold'
-                : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
-            }`}
-          >
-            <BarChart2 className="w-4 h-4" />
-            <span>Sales Analytics</span>
-          </button>
-
           <button
             onClick={() => setActiveTab('overview')}
             className={`py-3.5 px-3 text-xs sm:text-sm font-semibold border-b-2 flex items-center gap-2 transition-all ${
@@ -675,311 +582,8 @@ export const ItemDetailPage: React.FC = () => {
           </button>
         </div>
 
-        {/* Tab 1: Sales Analytics (Matching Reference Image 3) */}
-        {activeTab === 'analytics' && analytics && (
-          <div className="p-4 sm:p-6 space-y-6">
-            {/* Controls Bar: Granularity toggle & Export actions */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              {/* Granularity buttons */}
-              <div className="flex items-center p-1 template-input rounded-xl border border-slate-200 dark:border-white/[0.08] w-fit">
-                {(['daily', 'weekly', 'monthly', 'yearly'] as TimeGranularity[]).map((mode) => (
-                  <button
-                    key={mode}
-                    onClick={() => setGranularity(mode)}
-                    className={`px-3 py-1.5 text-xs font-semibold rounded-lg capitalize transition-all ${
-                      granularity === mode
-                        ? 'bg-accent-orange text-white shadow-sm'
-                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                    }`}
-                  >
-                    {mode}
-                  </button>
-                ))}
-              </div>
+        {/* Tab: Overview & Technical Specs */}
 
-              {/* View switch & Export */}
-              <div className="flex items-center gap-2">
-                <div className="flex items-center template-input rounded-xl p-1 border border-slate-200 dark:border-white/[0.08]">
-                  <button
-                    onClick={() => setAnalyticsViewMode('chart')}
-                    className={`p-1.5 rounded-lg text-xs flex items-center gap-1 ${
-                      analyticsViewMode === 'chart'
-                        ? 'bg-accent-orange text-white shadow-sm'
-                        : 'text-slate-400 hover:text-white'
-                    }`}
-                    title="Chart View"
-                  >
-                    <BarChart2 className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => setAnalyticsViewMode('table')}
-                    className={`p-1.5 rounded-lg text-xs flex items-center gap-1 ${
-                      analyticsViewMode === 'table'
-                        ? 'bg-accent-orange text-white shadow-sm'
-                        : 'text-slate-400 hover:text-white'
-                    }`}
-                    title="Table View"
-                  >
-                    <TableIcon className="w-4 h-4" />
-                  </button>
-                </div>
-
-                <button
-                  onClick={handleExportCSV}
-                  className="px-3.5 py-2 text-xs font-medium rounded-xl border border-slate-200 dark:border-white/[0.08] template-input text-slate-700 dark:text-slate-300 hover:text-white transition-colors flex items-center gap-1.5 shadow-sm"
-                >
-                  <Download className="w-3.5 h-3.5 text-accent-blue" />
-                  <span>Export CSV</span>
-                </button>
-              </div>
-            </div>
-
-            {/* 4 KPI Cards Row */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              {/* Total Sales */}
-              <div className="p-4 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200/80 dark:border-white/[0.06]">
-                <p className="text-xs font-medium text-slate-500 dark:text-slate-400">Total Sales Value</p>
-                <p className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white mt-1">
-                  {formatINR(analytics.totalSalesINR)}
-                </p>
-                <div className="flex items-center gap-1 mt-1 text-xs font-semibold text-emerald-500">
-                  <TrendingUp className="w-3.5 h-3.5" />
-                  <span>+{analytics.totalSalesChangePercent}% vs prior period</span>
-                </div>
-              </div>
-
-              {/* Units Sold */}
-              <div className="p-4 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200/80 dark:border-white/[0.06]">
-                <p className="text-xs font-medium text-slate-500 dark:text-slate-400">Total Units Sold</p>
-                <p className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white mt-1">
-                  {analytics.unitsSold.toLocaleString('en-IN')}{' '}
-                  <span className="text-xs font-normal text-slate-500">{item.unit}</span>
-                </p>
-                <div className="flex items-center gap-1 mt-1 text-xs font-semibold text-emerald-500">
-                  <TrendingUp className="w-3.5 h-3.5" />
-                  <span>+{analytics.unitsSoldChangePercent}% demand</span>
-                </div>
-              </div>
-
-              {/* Avg Selling Price */}
-              <div className="p-4 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200/80 dark:border-white/[0.06]">
-                <p className="text-xs font-medium text-slate-500 dark:text-slate-400">Avg Selling Realization</p>
-                <p className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white mt-1">
-                  {formatINR(analytics.avgSellingPriceINR)}
-                </p>
-                <div className="flex items-center gap-1 mt-1 text-xs text-slate-400">
-                  <span>Strict (Sales ÷ Units)</span>
-                </div>
-              </div>
-
-              {/* Order Count */}
-              <div className="p-4 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200/80 dark:border-white/[0.06]">
-                <p className="text-xs font-medium text-slate-500 dark:text-slate-400">Total Invoices / Orders</p>
-                <p className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white mt-1">
-                  {analytics.ordersCount.toLocaleString('en-IN')}
-                </p>
-                <div className="flex items-center gap-1 mt-1 text-xs font-semibold text-emerald-500">
-                  <TrendingUp className="w-3.5 h-3.5" />
-                  <span>+{analytics.ordersChangePercent}% transactions</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Dual-Axis Line Chart Card */}
-            {analyticsViewMode === 'chart' ? (
-              <div className="p-5 rounded-2xl bg-white dark:bg-white/[0.02] border border-slate-200 dark:border-white/[0.06]">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
-                  <div>
-                    <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-                      Revenue vs Demand Volume Trends
-                    </h3>
-                    <p className="text-xs text-slate-500">
-                      Dual-axis comparison of Gross Sales (₹) on primary axis and Units Sold on secondary axis.
-                    </p>
-                  </div>
-
-                  {/* Series Legend Toggles */}
-                  <div className="flex items-center gap-4 text-xs">
-                    <button
-                      onClick={() => setShowSalesLine(!showSalesLine)}
-                      className={`flex items-center gap-1.5 transition-opacity ${
-                        showSalesLine ? 'opacity-100 font-semibold' : 'opacity-40'
-                      }`}
-                    >
-                      <span className="w-3 h-3 rounded-full bg-accent-blue inline-block"></span>
-                      <span className="text-slate-700 dark:text-slate-200">Revenue (₹)</span>
-                    </button>
-                    <button
-                      onClick={() => setShowUnitsLine(!showUnitsLine)}
-                      className={`flex items-center gap-1.5 transition-opacity ${
-                        showUnitsLine ? 'opacity-100 font-semibold' : 'opacity-40'
-                      }`}
-                    >
-                      <span className="w-3 h-3 rounded-full bg-accent-orange inline-block"></span>
-                      <span className="text-slate-700 dark:text-slate-200">Units ({item.unit})</span>
-                    </button>
-                  </div>
-                </div>
-
-                <div className="h-72 w-full">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <ComposedChart data={analytics.chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#94a3b8" opacity={0.15} />
-                      <XAxis
-                        dataKey="periodLabel"
-                        tick={{ fontSize: 11, fill: '#64748b' }}
-                        axisLine={{ stroke: '#cbd5e1' }}
-                      />
-                      {/* Left Axis: INR Revenue */}
-                      <YAxis
-                        yAxisId="salesAxis"
-                        orientation="left"
-                        tickFormatter={(val) => `₹${(val / 1000).toFixed(0)}k`}
-                        tick={{ fontSize: 11, fill: '#3B5BFF' }}
-                        axisLine={{ stroke: '#3B5BFF' }}
-                      />
-                      {/* Right Axis: Quantity Units */}
-                      <YAxis
-                        yAxisId="unitsAxis"
-                        orientation="right"
-                        tickFormatter={(val) => `${val}`}
-                        tick={{ fontSize: 11, fill: '#FF6B35' }}
-                        axisLine={{ stroke: '#FF6B35' }}
-                      />
-                      <Tooltip
-                        content={({ active, payload, label }) => {
-                          if (active && payload && payload.length) {
-                            return (
-                              <div className="p-3 bg-slate-900/95 text-white rounded-xl shadow-xl border border-slate-700 text-xs space-y-1">
-                                <p className="font-bold text-slate-300">{label}</p>
-                                {payload.map((entry, idx) => (
-                                  <p key={idx} style={{ color: entry.color }} className="flex justify-between gap-4">
-                                    <span>{entry.name}:</span>
-                                    <span className="font-semibold">
-                                      {entry.dataKey === 'salesINR'
-                                        ? formatINR(Number(entry.value))
-                                        : `${entry.value} ${item.unit}`}
-                                    </span>
-                                  </p>
-                                ))}
-                              </div>
-                            );
-                          }
-                          return null;
-                        }}
-                      />
-                      {showSalesLine && (
-                        <Line
-                          yAxisId="salesAxis"
-                          type="monotone"
-                          dataKey="salesINR"
-                          name="Sales (₹)"
-                          stroke="#3B5BFF"
-                          strokeWidth={2.5}
-                          dot={{ r: 3, fill: '#3B5BFF' }}
-                          activeDot={{ r: 6 }}
-                        />
-                      )}
-                      {showUnitsLine && (
-                        <Bar
-                          yAxisId="unitsAxis"
-                          dataKey="unitsSold"
-                          name="Units Sold"
-                          fill="#FF6B35"
-                          opacity={0.8}
-                          radius={[4, 4, 0, 0]}
-                        />
-                      )}
-                    </ComposedChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-            ) : (
-              /* Tabular View */
-              <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-white/[0.06]">
-                <table className="w-full text-left text-xs">
-                  <thead className="bg-slate-50 dark:bg-white/[0.02] text-slate-600 dark:text-slate-400 border-b border-slate-200 dark:border-white/[0.06]">
-                    <tr>
-                      <th className="py-2.5 px-4 font-semibold">Period</th>
-                      <th className="py-2.5 px-4 font-semibold text-right">Revenue (₹)</th>
-                      <th className="py-2.5 px-4 font-semibold text-right">Units Sold</th>
-                      <th className="py-2.5 px-4 font-semibold text-right">Avg Price / Unit</th>
-                      <th className="py-2.5 px-4 font-semibold text-right">Invoices</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 dark:divide-white/[0.06] text-slate-700 dark:text-slate-300">
-                    {analytics.chartData.map((d, i) => (
-                      <tr key={i} className="hover:bg-slate-50/50 dark:hover:bg-white/[0.02]">
-                        <td className="py-2.5 px-4 font-medium">{d.periodLabel}</td>
-                        <td className="py-2.5 px-4 text-right font-semibold text-emerald-500">
-                          {formatINR(d.salesINR)}
-                        </td>
-                        <td className="py-2.5 px-4 text-right">
-                          {d.unitsSold} {item.unit}
-                        </td>
-                        <td className="py-2.5 px-4 text-right">
-                          {formatINR(d.unitsSold > 0 ? d.salesINR / d.unitsSold : 0)}
-                        </td>
-                        <td className="py-2.5 px-4 text-right">{d.ordersCount}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-
-            {/* Top Buyers / Customers Table Card */}
-            <div className="p-5 rounded-2xl bg-white dark:bg-white/[0.02] border border-slate-200 dark:border-white/[0.06]">
-              <div className="flex items-center justify-between mb-3">
-                <div>
-                  <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-                    Top Wholesale Buyers for this SKU
-                  </h3>
-                  <p className="text-xs text-slate-500">
-                    Distributors and contractors with highest volume procurement.
-                  </p>
-                </div>
-              </div>
-
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
-                  <thead className="bg-slate-50 dark:bg-white/[0.02] text-slate-600 dark:text-slate-400 border-b border-slate-200 dark:border-white/[0.06]">
-                    <tr>
-                      <th className="py-2.5 px-3 font-semibold">Customer / Firm</th>
-                      <th className="py-2.5 px-3 font-semibold">Location</th>
-                      <th className="py-2.5 px-3 font-semibold text-right">Total Units</th>
-                      <th className="py-2.5 px-3 font-semibold text-right">Gross Billing (₹)</th>
-                      <th className="py-2.5 px-3 font-semibold text-right">Last Purchase</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 dark:divide-white/[0.06] text-slate-700 dark:text-slate-300">
-                    {topCustomers.map((cust) => (
-                      <tr key={cust.customerId} className="hover:bg-slate-50/50 dark:hover:bg-white/[0.02]">
-                        <td className="py-2.5 px-3 font-medium text-slate-900 dark:text-white">
-                          {cust.customerName}
-                        </td>
-                        <td className="py-2.5 px-3 text-slate-500">
-                          {cust.city}, {cust.state}
-                        </td>
-                        <td className="py-2.5 px-3 text-right font-semibold">
-                          {cust.unitsPurchased.toLocaleString('en-IN')} {item.unit}
-                        </td>
-                        <td className="py-2.5 px-3 text-right font-semibold text-slate-900 dark:text-white">
-                          {formatINR(cust.totalSpentINR)}
-                        </td>
-                        <td className="py-2.5 px-3 text-right text-slate-500">
-                          {formatDate(cust.lastPurchaseDate)}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Tab 2: Overview & Technical Specs */}
         {activeTab === 'overview' && (
           <div className="p-4 sm:p-6 space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

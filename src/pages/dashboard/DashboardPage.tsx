@@ -1,9 +1,7 @@
 import React, { useState } from 'react';
 import { DashboardCalendarCard } from '../../components/dashboard/DashboardCalendarCard';
-import { Button } from '../../components/common/Button';
 import { Badge } from '../../components/common/Badge';
-import { FilePlus, RefreshCw } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { RefreshCw } from 'lucide-react';
 
 export const DashboardPage: React.FC = () => {
   const [refreshKey, setRefreshKey] = useState(0);
@@ -43,17 +41,6 @@ export const DashboardPage: React.FC = () => {
           >
             <RefreshCw className="w-4 h-4" strokeWidth={1.5} />
           </button>
-
-          {/* Create Invoice Quick Action */}
-          <Link to="/sales/invoices/new">
-            <Button
-              variant="primary"
-              size="sm"
-              leftIcon={<FilePlus className="w-3.5 h-3.5" />}
-            >
-              New Invoice
-            </Button>
-          </Link>
         </div>
       </div>
 

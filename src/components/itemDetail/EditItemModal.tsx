@@ -51,6 +51,7 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({
 
   const [name, setName] = useState(item.name);
   const [materialCategory, setMaterialCategory] = useState<MaterialCategory>(item.materialCategory);
+  const [materialSubtype, setMaterialSubtype] = useState(item.materialSubtype || '');
   
   // Image editing state
   const [imageUrl, setImageUrl] = useState(item.images[0] || '');
@@ -93,6 +94,7 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({
     if (isOpen) {
       setName(item.name);
       setMaterialCategory(item.materialCategory);
+      setMaterialSubtype(item.materialSubtype || '');
       setImageUrl(item.images[0] || '');
       setImageFileInfo(null);
       setImageError(null);
@@ -273,7 +275,7 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({
           warehouseId: item.warehouseId || '',
           warehouseName: item.warehouseName || 'Unassigned',
           unit: item.unit,
-          materialSubtype: item.materialSubtype || '',
+          materialSubtype: materialSubtype.trim(),
           rackLocation: item.rackLocation || '',
           sellingPrice: parsedSelling,
           costPrice: parsedCost,
@@ -651,6 +653,31 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({
                   </option>
                 ))}
               </select>
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  Sub Category (Optional)
+                </label>
+                {materialSubtype && isAdmin && (
+                  <button
+                    type="button"
+                    onClick={() => setMaterialSubtype('')}
+                    className="text-[11px] text-rose-500 hover:text-rose-600 hover:underline"
+                  >
+                    ✕ Remove Subcategory
+                  </button>
+                )}
+              </div>
+              <input
+                type="text"
+                placeholder={isAdmin ? "Enter or customize subcategory..." : "Subcategory"}
+                value={materialSubtype}
+                onChange={(e) => setMaterialSubtype(e.target.value)}
+                disabled={!isAdmin}
+                className="w-full px-3 py-2 text-sm template-input border border-slate-200 dark:border-white/[0.08] rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-accent-orange/30 disabled:opacity-60"
+              />
             </div>
 
             <div>

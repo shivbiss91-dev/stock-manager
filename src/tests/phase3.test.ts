@@ -8,9 +8,9 @@ describe('Phase 3: Materials Categories Home', () => {
   beforeAll(() => {
     inventoryService._seedInventoryForTesting(MASTER_INVENTORY);
   });
-  it('returns all 4 primary product categories', async () => {
+  it('returns all primary product categories', async () => {
     const categories = await materialsService.getCategories('all');
-    expect(categories.length).toBe(4);
+    expect(categories.length).toBeGreaterThanOrEqual(16);
 
     const categoryIds = categories.map((c) => c.id);
     expect(categoryIds).toContain('card_holder');

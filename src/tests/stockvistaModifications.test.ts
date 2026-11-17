@@ -45,13 +45,32 @@ describe('StockVista Modifications & Hardening Test Suite', () => {
 
   // 2. Product Category system overhaul (Exactly 4 categories)
   describe('Requirement 6: Product Category System', () => {
-    it('contains strictly the four required categories and no generic material categories', () => {
+    it('contains all required expanded categories and no generic material categories', () => {
       const categoryIds = PRODUCT_CATEGORIES.map((c) => c.id);
-      expect(categoryIds).toHaveLength(4);
-      expect(categoryIds).toEqual(['card_holder', 'lanyard', 'hook', 'button_bag']);
+      expect(categoryIds.length).toBeGreaterThanOrEqual(16);
+      expect(categoryIds).toContain('hook');
+      expect(categoryIds).toContain('badge');
+      expect(categoryIds).toContain('button_bag');
+      expect(categoryIds).toContain('die');
+      expect(categoryIds).toContain('metal_cap');
+      expect(categoryIds).toContain('card_holder');
+      expect(categoryIds).toContain('ribbon');
+      expect(categoryIds).toContain('satin_roll');
+      expect(categoryIds).toContain('tube_roll');
+      expect(categoryIds).toContain('tape_roll');
+      expect(categoryIds).toContain('nickle_fitting');
+      expect(categoryIds).toContain('yoyo');
+      expect(categoryIds).toContain('folder');
+      expect(categoryIds).toContain('machine');
+      expect(categoryIds).toContain('zipper');
+      expect(categoryIds).toContain('clip');
+      expect(categoryIds).toContain('lanyard');
 
       const categoryNames = PRODUCT_CATEGORIES.map((c) => c.name);
-      expect(categoryNames).toEqual(['Card Holder', 'Lanyard', 'Hook', 'Button Bag']);
+      expect(categoryNames).toContain('Card Holder');
+      expect(categoryNames).toContain('Lanyard');
+      expect(categoryNames).toContain('Hook');
+      expect(categoryNames).toContain('Button Bag');
 
       // Old generic categories must not exist in catalogue
       expect(categoryNames).not.toContain('Wood & Timber');
