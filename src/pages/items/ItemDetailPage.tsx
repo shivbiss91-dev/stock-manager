@@ -3,7 +3,6 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
   ArrowLeft,
   Edit3,
-  Receipt,
   ArrowRightLeft,
   Printer,
   Package,
@@ -15,10 +14,6 @@ import {
   DollarSign,
   ShoppingCart,
   ShieldCheck,
-  FileText,
-  Upload,
-  Download,
-  Eye,
   CheckCircle2,
   Clock,
   ChevronRight,
@@ -31,16 +26,8 @@ import {
 } from 'lucide-react';
 import { QuickStockAdjustmentModal } from '../../components/dashboard/QuickStockAdjustmentModal';
 import { formatPackagingBreakdown } from '../../utils/unitConversions';
-// recharts removed
 import { inventoryService } from '../../services/inventoryService';
-import { itemAnalyticsService } from '../../services/itemAnalyticsService';
-import { stockMovementService } from '../../services/stockMovementService';
 import { ComputedInventoryItem } from '../../types/inventory';
-import {
-  StockMovementRecord,
-  ItemDocument,
-  MovementType,
-} from '../../types/itemDetail';
 import { useAuthStore } from '../../store/authStore';
 import { formatINR } from '../../utils/formatINR';
 import { formatCategoryName } from '../../data/materialCategories';
@@ -50,8 +37,6 @@ import { ProductImage } from '../../components/common/ProductImage';
 import { TransferStockModal } from '../../components/itemDetail/TransferStockModal';
 import { BarcodeLabelModal } from '../../components/itemDetail/BarcodeLabelModal';
 import { useNotificationStore } from '../../store/notificationStore';
-
-type ActiveTab = 'movements' | 'documents';
 
 export const ItemDetailPage: React.FC = () => {
   const { itemId } = useParams<{ itemId: string }>();
@@ -66,19 +51,6 @@ export const ItemDetailPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [isImageZoomed, setIsImageZoomed] = useState(false);
-
-  // Tab state
-  const [activeTab, setActiveTab] = useState<ActiveTab>('movements');
-
-
-
-  // Movements state
-  const [movements, setMovements] = useState<StockMovementRecord[]>([]);
-  const [movementFilter, setMovementFilter] = useState<MovementType | 'all'>('all');
-
-  // Documents state
-  const [documents, setDocuments] = useState<ItemDocument[]>([]);
-  const [isUploadingDoc, setIsUploadingDoc] = useState(false);
 
   // Modals state
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -112,8 +84,6 @@ export const ItemDetailPage: React.FC = () => {
     if (!itemId) return;
     const reloaded = await inventoryService.getItemById(itemId);
     if (reloaded) setItem(reloaded);
-    const m = await stockMovementService.getMovements({ itemId });
-    setMovements(m);
   };
 
   // Load item data
@@ -126,17 +96,6 @@ export const ItemDetailPage: React.FC = () => {
         const found = await inventoryService.getItemById(itemId);
         if (isMounted) {
           setItem(found);
-          if (found) {
-            // Load movements, docs
-            const [movementsRes, docsRes] = await Promise.all([
-              stockMovementService.getMovements({ itemId: found.id }),
-              itemAnalyticsService.getItemDocuments(found.id),
-            ]);
-            if (isMounted) {
-              setMovements(movementsRes);
-              setDocuments(docsRes);
-            }
-          }
         }
       } catch (err) {
         console.error('Failed to load item detail:', err);
@@ -151,46 +110,12 @@ export const ItemDetailPage: React.FC = () => {
     };
   }, [itemId]);
 
-
-
-  // Filtered movements
-  const filteredMovements = useMemo(() => {
-    if (movementFilter === 'all') return movements;
-    return movements.filter((m) => m.type === movementFilter);
-  }, [movements, movementFilter]);
-
   // Margin calculation for Admin
   const profitMarginPercent = useMemo(() => {
     if (!item || item.sellingPrice <= 0) return 0;
     const diff = item.sellingPrice - item.costPrice;
     return Math.round((diff / item.sellingPrice) * 1000) / 10;
   }, [item]);
-
-  // Export Analytics to CSV
-  const handleExportCSV = () => {
-    if (!analytics || !item) return;
-    const headers = ['Period', 'Sales (INR)', 'Units Sold', 'Orders Count'];
-    const rows = analytics.chartData.map((d) => [
-      `"${d.periodLabel}"`,
-      d.salesINR.toFixed(2),
-      d.unitsSold,
-      d.ordersCount,
-    ]);
-    const csvContent = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `${item.sku}_Sales_Analytics_${granularity}.csv`;
-    link.click();
-    URL.revokeObjectURL(url);
-
-    addNotification({
-      title: 'Analytics Exported',
-      message: `Exported ${analytics.chartData.length} records for ${item.sku}.`,
-      type: 'info',
-    });
-  };
 
   if (isLoading) {
     return (
@@ -533,264 +458,7 @@ export const ItemDetailPage: React.FC = () => {
         </div>
       </div>
 
-      {/* 3. Tabbed Sections (Movements, Documents) */}
-      <div className="template-card border border-slate-200 dark:border-white/[0.06] rounded-[20px] shadow-soft overflow-hidden">
-        {/* Navigation Tabs */}
-        <div className="flex items-center gap-2 px-4 sm:px-6 border-b border-slate-200 dark:border-white/[0.06] overflow-x-auto">
-          <button
-            onClick={() => setActiveTab('movements')}
-            className={`py-3.5 px-3 text-xs sm:text-sm font-semibold border-b-2 flex items-center gap-2 transition-all ${
-              activeTab === 'movements'
-                ? 'border-accent-orange text-accent-orange font-bold'
-                : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
-            }`}
-          >
-            <ArrowRightLeft className="w-4 h-4" />
-            <span>Stock Movements</span>
-            <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-slate-100 dark:bg-white/[0.05] text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-white/[0.06]">
-              {movements.length}
-            </span>
-          </button>
 
-          <button
-            onClick={() => setActiveTab('documents')}
-            className={`py-3.5 px-3 text-xs sm:text-sm font-semibold border-b-2 flex items-center gap-2 transition-all ${
-              activeTab === 'documents'
-                ? 'border-accent-orange text-accent-orange font-bold'
-                : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
-            }`}
-          >
-            <FileText className="w-4 h-4" />
-            <span>Documents</span>
-            <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-slate-100 dark:bg-white/[0.05] text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-white/[0.06]">
-              {documents.length}
-            </span>
-          </button>
-        </div>
-
-        {/* Tab: Stock Movement Ledger */}
-        {activeTab === 'movements' && (
-          <div className="p-4 sm:p-6 space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div>
-                <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-                  Inventory Movement Ledger
-                </h3>
-                <p className="text-xs text-slate-500">
-                  Full audit trail of receipts, shipments, transfers, and warehouse adjustments.
-                </p>
-              </div>
-
-              {/* Movement Type Filter */}
-              <div className="flex items-center gap-2">
-                <select
-                  value={movementFilter}
-                  onChange={(e) => setMovementFilter(e.target.value as MovementType | 'all')}
-                  className="px-3 py-2 text-xs template-input border border-slate-200 dark:border-white/[0.08] rounded-xl text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-accent-orange/30"
-                >
-                  <option value="all" className="dark:bg-dark-card">All Movements</option>
-                  <option value="in" className="dark:bg-dark-card">Inward Receipts (PO)</option>
-                  <option value="out" className="dark:bg-dark-card">Sales Dispatches (SO)</option>
-                  <option value="transfer" className="dark:bg-dark-card">Inter-Hub Transfers</option>
-                  <option value="return" className="dark:bg-dark-card">Sales Returns (Credit Notes)</option>
-                  <option value="damage" className="dark:bg-dark-card">Damage / Write-offs</option>
-                  <option value="adjustment" className="dark:bg-dark-card">Physical Audits</option>
-                </select>
-
-                <Link
-                  to={`/stock-movements?itemId=${item.id}`}
-                  className="px-3 py-1.5 text-xs font-semibold text-accent-blue hover:underline"
-                >
-                  View All Movements ➔
-                </Link>
-              </div>
-            </div>
-
-            <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-white/[0.06]">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-slate-50 dark:bg-white/[0.02] text-slate-600 dark:text-slate-400 border-b border-slate-200 dark:border-white/[0.06]">
-                  <tr>
-                    <th className="py-2.5 px-3 font-semibold">Date & Time</th>
-                    <th className="py-2.5 px-3 font-semibold">Type</th>
-                    <th className="py-2.5 px-3 font-semibold text-right">Prev Balance</th>
-                    <th className="py-2.5 px-3 font-semibold text-right">Adjustment Delta</th>
-                    <th className="py-2.5 px-3 font-semibold text-right">New Balance</th>
-                    <th className="py-2.5 px-3 font-semibold">Reference & Reason</th>
-                    <th className="py-2.5 px-3 font-semibold">Authorized By</th>
-                    <th className="py-2.5 px-3 font-semibold">Notes</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-white/[0.06] text-slate-700 dark:text-slate-300">
-                  {filteredMovements.length > 0 ? (
-                    filteredMovements.map((m) => (
-                      <tr key={m.id} className="hover:bg-slate-50/50 dark:hover:bg-white/[0.02]">
-                        <td className="py-2.5 px-3 font-medium text-slate-600 dark:text-slate-400 whitespace-nowrap">
-                          {formatDate(m.date)}
-                        </td>
-                        <td className="py-2.5 px-3 whitespace-nowrap">
-                          <span
-                            className={`px-2 py-0.5 rounded text-[11px] font-semibold uppercase ${
-                              m.type === 'in'
-                                ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20'
-                                : m.type === 'out'
-                                ? 'bg-blue-500/10 text-accent-blue border border-blue-500/20'
-                                : m.type === 'transfer'
-                                ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20'
-                                : m.type === 'return'
-                                ? 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20'
-                                : m.type === 'damage'
-                                ? 'bg-rose-500/10 text-rose-500 border border-rose-500/20'
-                                : 'bg-slate-500/10 text-slate-400 border border-slate-500/20'
-                            }`}
-                          >
-                            {m.type}
-                          </span>
-                        </td>
-                        <td className="py-2.5 px-3 text-right font-mono font-medium text-slate-500 whitespace-nowrap">
-                          {m.stockBefore ?? (m.stockAfter - m.quantityDelta)} {m.unit}
-                        </td>
-                        <td
-                          className={`py-2.5 px-3 text-right font-bold whitespace-nowrap ${
-                            m.quantityDelta > 0
-                              ? 'text-emerald-500'
-                              : 'text-rose-500'
-                          }`}
-                        >
-                          {m.quantityDelta > 0 ? `+${m.quantityDelta}` : m.quantityDelta} {m.unit}
-                        </td>
-                        <td className="py-2.5 px-3 text-right font-mono font-extrabold text-slate-800 dark:text-slate-100 whitespace-nowrap">
-                          {m.stockAfter} {m.unit}
-                        </td>
-                        <td className="py-2.5 px-3 font-mono font-semibold text-accent-blue whitespace-nowrap">
-                          <div>{m.referenceNumber}</div>
-                          {m.reason && <div className="text-[10px] text-slate-400 font-sans font-normal">{m.reason}</div>}
-                        </td>
-                        <td className="py-2.5 px-3 whitespace-nowrap">
-                          <span className="font-medium text-slate-800 dark:text-slate-200">{m.userName}</span>
-                          <span className="text-[10px] text-slate-400 block">{m.userRole}</span>
-                        </td>
-                        <td className="py-2.5 px-3 text-slate-500 max-w-xs truncate" title={m.notes}>
-                          {m.notes}
-                        </td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan={7} className="py-8 text-center text-slate-400">
-                        No movement entries match the selected filter.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-        {/* Tab 4: Documents & Compliance */}
-        {activeTab === 'documents' && (
-          <div className="p-4 sm:p-6 space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div>
-                <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-                  Compliance Certificates & Invoices
-                </h3>
-                <p className="text-xs text-slate-500">
-                  Manage quality inspection certificates, BIS licenses, test reports, and consignments.
-                </p>
-              </div>
-
-              {/* Upload Document simulation */}
-              <button
-                onClick={() => {
-                  const newDoc: ItemDocument = {
-                    id: `doc-${item.id}-${Date.now()}`,
-                    itemId: item.id,
-                    title: 'New Uploaded Quality Test Certificate.pdf',
-                    fileType: 'pdf',
-                    fileSize: '1.5 MB',
-                    uploadedBy: user?.name || 'Administrator',
-                    uploadedAt: new Date().toISOString(),
-                    url: '#',
-                    category: 'Test Report',
-                  };
-                  setDocuments([newDoc, ...documents]);
-                  addNotification({
-                    title: 'Document Uploaded',
-                    message: 'New quality certification attached to item record.',
-                    type: 'success',
-                  });
-                }}
-                className="px-3.5 py-2 text-xs font-semibold rounded-xl bg-accent-orange text-white hover:bg-accent-orange/90 transition shadow-sm flex items-center gap-1.5 self-start sm:self-auto"
-              >
-                <Upload className="w-3.5 h-3.5" />
-                <span>Upload Document</span>
-              </button>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {documents.map((doc) => (
-                <div
-                  key={doc.id}
-                  className="p-4 rounded-xl border border-slate-200 dark:border-white/[0.06] bg-slate-50/50 dark:bg-white/[0.02] flex items-start justify-between gap-3 hover:shadow-xs transition"
-                >
-                  <div className="flex items-start gap-3">
-                    <div className="p-2.5 rounded-xl bg-red-500/10 text-red-500 border border-red-500/20 mt-0.5">
-                      <FileText className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <h4 className="text-xs font-bold text-slate-900 dark:text-white">
-                        {doc.title}
-                      </h4>
-                      <div className="flex flex-wrap items-center gap-2 mt-1 text-[11px] text-slate-500 dark:text-slate-400">
-                        <span className="px-2 py-0.5 rounded bg-slate-200/80 dark:bg-white/[0.05] text-slate-700 dark:text-slate-300 font-medium border border-slate-200 dark:border-white/[0.06]">
-                          {doc.category}
-                        </span>
-                        <span>•</span>
-                        <span>{doc.fileSize}</span>
-                        <span>•</span>
-                        <span>Uploaded by {doc.uploadedBy}</span>
-                      </div>
-                      <p className="text-[10px] text-slate-400 mt-1">
-                        Dated {formatDate(doc.uploadedAt)}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-1.5 flex-shrink-0">
-                    <button
-                      onClick={() => {
-                        addNotification({
-                          title: 'Viewing Document',
-                          message: `Opening ${doc.title} in secure viewer.`,
-                          type: 'info',
-                        });
-                      }}
-                      className="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-200/60 dark:hover:bg-white/[0.05] rounded-lg transition"
-                      title="Preview Document"
-                    >
-                      <Eye className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => {
-                        addNotification({
-                          title: 'Downloading Document',
-                          message: `Downloading ${doc.title} (${doc.fileSize})`,
-                          type: 'info',
-                        });
-                      }}
-                      className="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-200/60 dark:hover:bg-white/[0.05] rounded-lg transition"
-                      title="Download Document"
-                    >
-                      <Download className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
 
       {/* Modals */}
       {isEditModalOpen && (
@@ -849,8 +517,6 @@ export const ItemDetailPage: React.FC = () => {
           onTransferComplete={async () => {
             const reloaded = await inventoryService.getItemById(item.id);
             if (reloaded) setItem(reloaded);
-            const m = await stockMovementService.getMovements({ itemId: item.id });
-            setMovements(m);
           }}
         />
       )}
