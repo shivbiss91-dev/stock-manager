@@ -8,14 +8,12 @@ import {
   Printer,
   Package,
   Layers,
-  MapPin,
   Calendar,
   AlertTriangle,
   TrendingUp,
   TrendingDown,
   DollarSign,
   ShoppingCart,
-  Tag,
   ShieldCheck,
   FileText,
   Upload,
@@ -53,7 +51,7 @@ import { TransferStockModal } from '../../components/itemDetail/TransferStockMod
 import { BarcodeLabelModal } from '../../components/itemDetail/BarcodeLabelModal';
 import { useNotificationStore } from '../../store/notificationStore';
 
-type ActiveTab = 'overview' | 'movements' | 'documents';
+type ActiveTab = 'movements' | 'documents';
 
 export const ItemDetailPage: React.FC = () => {
   const { itemId } = useParams<{ itemId: string }>();
@@ -70,7 +68,7 @@ export const ItemDetailPage: React.FC = () => {
   const [isImageZoomed, setIsImageZoomed] = useState(false);
 
   // Tab state
-  const [activeTab, setActiveTab] = useState<ActiveTab>('overview');
+  const [activeTab, setActiveTab] = useState<ActiveTab>('movements');
 
 
 
@@ -535,22 +533,10 @@ export const ItemDetailPage: React.FC = () => {
         </div>
       </div>
 
-      {/* 3. Tabbed Sections (Overview, Movements, Documents) */}
+      {/* 3. Tabbed Sections (Movements, Documents) */}
       <div className="template-card border border-slate-200 dark:border-white/[0.06] rounded-[20px] shadow-soft overflow-hidden">
         {/* Navigation Tabs */}
         <div className="flex items-center gap-2 px-4 sm:px-6 border-b border-slate-200 dark:border-white/[0.06] overflow-x-auto">
-          <button
-            onClick={() => setActiveTab('overview')}
-            className={`py-3.5 px-3 text-xs sm:text-sm font-semibold border-b-2 flex items-center gap-2 transition-all ${
-              activeTab === 'overview'
-                ? 'border-accent-orange text-accent-orange font-bold'
-                : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
-            }`}
-          >
-            <Package className="w-4 h-4" />
-            <span>Overview & Specs</span>
-          </button>
-
           <button
             onClick={() => setActiveTab('movements')}
             className={`py-3.5 px-3 text-xs sm:text-sm font-semibold border-b-2 flex items-center gap-2 transition-all ${
@@ -582,113 +568,7 @@ export const ItemDetailPage: React.FC = () => {
           </button>
         </div>
 
-        {/* Tab: Overview & Technical Specs */}
-
-        {activeTab === 'overview' && (
-          <div className="p-4 sm:p-6 space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Product Specifications */}
-              <div className="p-5 rounded-2xl bg-slate-50/60 dark:bg-white/[0.02] border border-slate-200 dark:border-white/[0.06] space-y-3">
-                <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                  <Tag className="w-4 h-4 text-accent-orange" />
-                  <span>Technical Specifications</span>
-                </h3>
-
-                <div className="divide-y divide-slate-100 dark:divide-white/[0.06] text-xs">
-                  <div className="py-2 flex justify-between">
-                    <span className="text-slate-500">Product Category</span>
-                    <span className="font-semibold capitalize text-slate-800 dark:text-slate-200">
-                      {formatCategoryName(item.materialCategory)}
-                    </span>
-                  </div>
-                  <div className="py-2 flex justify-between">
-                    <span className="text-slate-500">Sub-Type Classification</span>
-                    <span className="font-semibold text-slate-800 dark:text-slate-200">
-                      {item.materialSubtype}
-                    </span>
-                  </div>
-                  <div className="py-2 flex justify-between">
-                    <span className="text-slate-500">Billing UoM</span>
-                    <span className="font-semibold capitalize text-slate-800 dark:text-slate-200">
-                      {item.unit}
-                    </span>
-                  </div>
-                  <div className="py-2 flex justify-between">
-                    <span className="text-slate-500">Reorder Trigger</span>
-                    <span className="font-semibold text-amber-500">
-                      {item.reorderLevel} {item.unit}
-                    </span>
-                  </div>
-                  <div className="py-2 flex justify-between">
-                    <span className="text-slate-500">HSN Tariff Code</span>
-                    <span className="font-mono font-semibold text-slate-800 dark:text-slate-200">
-                      {item.hsnCode}
-                    </span>
-                  </div>
-                  <div className="py-2 flex justify-between">
-                    <span className="text-slate-500">Standard GST Slab</span>
-                    <span className="font-semibold text-accent-orange">
-                      {item.gstRate}%
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Warehouse & Storage Logistics */}
-              <div className="p-5 rounded-2xl bg-slate-50/60 dark:bg-white/[0.02] border border-slate-200 dark:border-white/[0.06] space-y-3">
-                <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                  <MapPin className="w-4 h-4 text-accent-blue" />
-                  <span>Warehouse Storage Information</span>
-                </h3>
-
-                <div className="divide-y divide-slate-100 dark:divide-white/[0.06] text-xs">
-                  <div className="py-2 flex justify-between">
-                    <span className="text-slate-500">Primary Warehouse</span>
-                    <span className="font-semibold text-slate-800 dark:text-slate-200">
-                      {item.warehouseName}
-                    </span>
-                  </div>
-                  <div className="py-2 flex justify-between">
-                    <span className="text-slate-500">Bin / Rack Coordinate</span>
-                    <span className="font-mono font-semibold text-slate-800 dark:text-slate-200">
-                      {item.rackLocation}
-                    </span>
-                  </div>
-                  <div className="py-2 flex justify-between">
-                    <span className="text-slate-500">Designated Supplier</span>
-                    <span className="font-semibold text-slate-800 dark:text-slate-200">
-                      {item.supplierName}
-                    </span>
-                  </div>
-                  <div className="py-2 flex justify-between">
-                    <span className="text-slate-500">Supplier Ledger ID</span>
-                    <span className="font-mono text-slate-800 dark:text-slate-200">
-                      {item.supplierId}
-                    </span>
-                  </div>
-                  <div className="py-2 flex justify-between">
-                    <span className="text-slate-500">Stock Asset Value</span>
-                    <span className="font-semibold text-emerald-500">
-                      {formatINR(item.currentStock * item.costPrice)}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Description Notes */}
-            <div className="p-5 rounded-2xl bg-slate-50/60 dark:bg-white/[0.02] border border-slate-200 dark:border-white/[0.06]">
-              <h4 className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">
-                Detailed Product Overview
-              </h4>
-              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
-                {item.description}
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* Tab 3: Stock Movement Ledger */}
+        {/* Tab: Stock Movement Ledger */}
         {activeTab === 'movements' && (
           <div className="p-4 sm:p-6 space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
