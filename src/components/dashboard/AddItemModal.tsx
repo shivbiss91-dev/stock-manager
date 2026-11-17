@@ -73,9 +73,6 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({ isOpen, onClose, onI
       setUnit('PCS');
       setReorderLevel(0);
       setReorderQuantity(0);
-      setBoxMultiplier(20);
-      setCartonMultiplier(100);
-      setBundleMultiplier(25);
       setCostPrice(0);
       setSellingPrice(0);
       setImageUrl('/products/card-holder.svg');
