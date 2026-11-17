@@ -7,6 +7,7 @@ import { inventoryService } from '../../services/inventoryService';
 import { MaterialCategory } from '../../types/inventory';
 import {
   PRODUCT_CATEGORIES,
+  MATERIAL_CATEGORIES,
   getAllCategories,
   saveCustomCategory,
 } from '../../data/materialCategories';
@@ -90,11 +91,11 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({ isOpen, onClose, onI
     }
   }, [isOpen]);
 
-  const selectedCategoryMeta = MATERIAL_CATEGORIES.find((c) => c.id === category);
+  const selectedCategoryMeta = categoriesList.find((c) => c.id === category) || MATERIAL_CATEGORIES.find((c) => c.id === category);
 
   const handleCategoryChange = (cat: MaterialCategory) => {
     setCategory(cat);
-    const meta = MATERIAL_CATEGORIES.find((c) => c.id === cat);
+    const meta = categoriesList.find((c) => c.id === cat) || MATERIAL_CATEGORIES.find((c) => c.id === cat);
     if (!isCustomImage && meta) {
       setImageUrl(meta.imageUrl);
     }
