@@ -13,7 +13,7 @@ import {
 } from '../../data/materialCategories';
 import { MaterialCategoryInfo } from '../../types/inventory';
 import { useAuthStore } from '../../store/authStore';
-import { PackagePlus, Layers, Image as ImageIcon, Upload, Trash2, Plus, X } from 'lucide-react';
+import { PackagePlus, Image as ImageIcon, Upload, Trash2, Plus, X } from 'lucide-react';
 import {
   PREDEFINED_UNITS,
   PredefinedUnit,
@@ -45,10 +45,6 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({ isOpen, onClose, onI
   const [unit, setUnit] = useState<PredefinedUnit>('PCS');
   const [reorderLevel, setReorderLevel] = useState<number>(100);
   const [reorderQuantity, setReorderQuantity] = useState<number>(250);
-  const [selectedPackagingCategory, setSelectedPackagingCategory] = useState<'BOX' | 'CTN' | 'BDL' | 'none'>('BOX');
-  const [boxMultiplier, setBoxMultiplier] = useState<number>(20);
-  const [cartonMultiplier, setCartonMultiplier] = useState<number>(100);
-  const [bundleMultiplier, setBundleMultiplier] = useState<number>(25);
   const [costPrice, setCostPrice] = useState<number>(22);
   const [sellingPrice, setSellingPrice] = useState<number>(36);
   const [gstRate, setGstRate] = useState<number>(18);
@@ -181,9 +177,9 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({ isOpen, onClose, onI
       const packagingConversions: PackagingConversions = {
         baseUnit: unit === 'UNT' ? 'UNT' : 'PCS',
         dozenMultiplier: 12,
-        boxMultiplier: Number(boxMultiplier) || 20,
-        cartonMultiplier: Number(cartonMultiplier) || 100,
-        bundleMultiplier: Number(bundleMultiplier) || 25,
+        boxMultiplier: 20,
+        cartonMultiplier: 100,
+        bundleMultiplier: 25,
       };
 
       const finalImages = imageUrl.trim()
@@ -239,7 +235,7 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({ isOpen, onClose, onI
       isOpen={isOpen}
       onClose={onClose}
       title="Create Master Product Record"
-      subtitle="Add a new catalog item with image, pricing, and packaging"
+      subtitle="Add a new catalog item with image and pricing"
       size="lg"
     >
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -493,120 +489,7 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({ isOpen, onClose, onI
           />
         </div>
 
-        {/* Product-Specific Packaging Conversions by Category */}
-        <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/[0.06] space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Layers className="w-4 h-4 text-brand-orange" />
-              <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
-                Packaging Conversions (Base Unit: {unit === 'UNT' ? 'UNT' : 'PCS'})
-              </span>
-            </div>
-            {selectedPackagingCategory !== 'none' && (
-              <button
-                type="button"
-                onClick={() => setSelectedPackagingCategory('none')}
-                className="text-[11px] text-rose-500 hover:text-rose-600 hover:underline flex items-center gap-1 font-semibold"
-                title="Cancel packaging and use direct pieces"
-              >
-                <span>✕ Cancel / Direct {unit === 'UNT' ? 'UNT' : 'PCS'}</span>
-              </button>
-            )}
-          </div>
 
-          <div>
-            <label className="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-              Choose Packaging Category (Select One)
-            </label>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-              {[
-                { id: 'none', label: 'None (Direct)', desc: 'Individual items' },
-                { id: 'BOX', label: 'Box (BOX)', desc: 'Packed in boxes' },
-                { id: 'CTN', label: 'Carton (CTN)', desc: 'Packed in cartons' },
-                { id: 'BDL', label: 'Bundle (BDL)', desc: 'Packed in bundles' },
-              ].map((pkg) => (
-                <button
-                  key={pkg.id}
-                  type="button"
-                  onClick={() => setSelectedPackagingCategory(pkg.id as any)}
-                  className={`p-2.5 rounded-xl border text-left transition-all ${
-                    selectedPackagingCategory === pkg.id
-                      ? 'bg-brand-orange/15 border-brand-orange text-brand-orange ring-1 ring-brand-orange'
-                      : 'bg-white dark:bg-white/[0.03] border-slate-200 dark:border-white/[0.08] text-slate-600 dark:text-slate-400 hover:border-slate-300 dark:hover:border-white/20'
-                  }`}
-                >
-                  <span className="font-bold text-xs block text-slate-900 dark:text-white">
-                    {pkg.label}
-                  </span>
-                  <span className="text-[10px] text-slate-400 block mt-0.5">
-                    {pkg.desc}
-                  </span>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {selectedPackagingCategory === 'none' ? (
-            <div className="p-3 rounded-xl bg-white dark:bg-white/[0.03] border border-dashed border-slate-200 dark:border-white/[0.08] text-xs text-slate-500 dark:text-slate-400 flex items-center justify-between">
-              <span>This item has no packaging multiplier. Handled directly as individual {unit === 'UNT' ? 'units' : 'pieces'}.</span>
-              <span className="text-[10px] text-emerald-500 font-bold bg-emerald-500/10 px-2 py-0.5 rounded">Direct Unit</span>
-            </div>
-          ) : (
-            <div className="p-3 rounded-xl bg-white dark:bg-white/[0.03] border border-slate-200 dark:border-white/[0.08] space-y-2">
-              <div className="flex items-center justify-between">
-                <label className="block text-[11px] font-semibold text-slate-700 dark:text-slate-300">
-                  {selectedPackagingCategory === 'BOX' && `Box Conversion: How many ${unit === 'UNT' ? 'UNT' : 'PCS'} in 1 Box?`}
-                  {selectedPackagingCategory === 'CTN' && `Carton Conversion: How many ${unit === 'UNT' ? 'UNT' : 'PCS'} in 1 Carton?`}
-                  {selectedPackagingCategory === 'BDL' && `Bundle Conversion: How many ${unit === 'UNT' ? 'UNT' : 'PCS'} in 1 Bundle?`}
-                </label>
-                <button
-                  type="button"
-                  onClick={() => setSelectedPackagingCategory('none')}
-                  className="text-[10.5px] text-rose-400 hover:text-rose-500 transition-colors font-medium"
-                >
-                  ✕ Cancel & Remove
-                </button>
-              </div>
-
-              <div className="flex items-center gap-2 max-w-sm">
-                <span className="text-xs font-bold text-slate-600 dark:text-slate-400">
-                  1 {selectedPackagingCategory} =
-                </span>
-                {selectedPackagingCategory === 'BOX' && (
-                  <input
-                    type="number"
-                    min="1"
-                    value={boxMultiplier}
-                    onChange={(e) => setBoxMultiplier(Math.max(1, parseInt(e.target.value) || 1))}
-                    className="w-28 px-3 py-1.5 text-xs template-input border border-slate-200 dark:border-white/[0.08] rounded-lg text-slate-900 dark:text-white font-bold"
-                  />
-                )}
-                {selectedPackagingCategory === 'CTN' && (
-                  <input
-                    type="number"
-                    min="1"
-                    value={cartonMultiplier}
-                    onChange={(e) => setCartonMultiplier(Math.max(1, parseInt(e.target.value) || 1))}
-                    className="w-28 px-3 py-1.5 text-xs template-input border border-slate-200 dark:border-white/[0.08] rounded-lg text-slate-900 dark:text-white font-bold"
-                  />
-                )}
-                {selectedPackagingCategory === 'BDL' && (
-                  <input
-                    type="number"
-                    min="1"
-                    value={bundleMultiplier}
-                    onChange={(e) => setBundleMultiplier(Math.max(1, parseInt(e.target.value) || 1))}
-                    className="w-28 px-3 py-1.5 text-xs template-input border border-slate-200 dark:border-white/[0.08] rounded-lg text-slate-900 dark:text-white font-bold"
-                  />
-                )}
-                <span className="text-xs text-slate-400">{unit === 'UNT' ? 'UNT' : 'PCS'}</span>
-              </div>
-              <p className="text-[10.5px] text-slate-400">
-                Only this single selected packaging type is applied. All other packaging sections are cancelled and ignored.
-              </p>
-            </div>
-          )}
-        </div>
 
         <div className="flex justify-end gap-2 pt-2 border-t border-slate-100 dark:border-white/[0.06]">
           <Button variant="outline" size="sm" type="button" onClick={onClose} disabled={isLoading}>
